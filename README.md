@@ -16,10 +16,18 @@ This Turborepo includes the following packages/apps:
 
 ### Apps and Packages
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+- `web`: a [Next.js](https://nextjs.org/) app (`apps/web`). Every Next app under `apps/` uses the same `src/` layout:
+  - `app/` — routes only
+  - `features/<name>/` — isolated domains (`components/`, `hooks/`, `lib/`, `server/queries/`, `server/actions/`)
+  - `shared/` — that app only; never import a feature
+  - Stack: [Zod 4](https://zod.dev/), [Clerk](https://clerk.com/) (`@clerk/nextjs`), [Vercel Workflow](https://useworkflow.dev) (`workflow`)
+- `@repo/ui`: a shared React component library used by `web`
+
+### Tooling
+
+- `@repo/typescript-config`: shared `tsconfig.json`s (`tooling/typescript-config`)
+- `@repo/mocks`: shared [MSW](https://mswjs.io/) handlers (`tooling/mocks`)
+- `@repo/web-e2e`: Playwright tests for `web` (`e2e/web`)
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 
@@ -29,6 +37,11 @@ This Turborepo has some additional tools already setup for you:
 
 - [TypeScript](https://www.typescriptlang.org/) for static type checking
 - [Biome](https://biomejs.dev/) for linting and formatting
+- [Lefthook](https://github.com/evilmartians/lefthook) for Git hooks
+- [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) for Next.js feature boundaries in `apps/*` (`bun run check-boundaries`)
+- [`bun test`](https://bun.com/docs/cli/test) for unit and integration tests
+- [Playwright](https://playwright.dev/) for end-to-end tests
+- [MSW](https://mswjs.io/) for shared HTTP mocks
 
 ### Build
 
@@ -55,16 +68,56 @@ You can build a specific package by using a [filter](https://turborepo.dev/docs/
 With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
 
 ```sh
-turbo build --filter=docs
+turbo build --filter=web
 ```
 
 Without global `turbo`:
 
 ```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
+npx turbo build --filter=web
+bun exec turbo build --filter=web
 ```
+
+### Git hooks
+
+Lefthook runs before each commit (installed automatically via `bun install`):
+
+| Hook | What it does |
+|------|----------------|
+| **Biome** | Formats and lints staged files |
+| **check-boundaries** | Runs dependency-cruiser on every Next.js app under `apps/` when `src` TypeScript is staged — blocks feature-to-feature and `shared` → `features` imports |
+| **check-types** | Runs `turbo run check-types --filter=...[HEAD]` when `.ts`/`.tsx` files are staged — typechecks changed packages **and their dependents** (e.g. changing `@repo/ui` also checks `web`) |
+
+To dry-run the pre-commit hook manually:
+
+```sh
+bunx lefthook run pre-commit
+```
+
+To skip hooks for a single commit:
+
+```sh
+LEFTHOOK=0 git commit -m "message"
+```
+
+### Test
+
+Unit and integration tests use Bun (`bun:test`) with React Testing Library. Specs live next to source (`*.test.ts`). Root `test/` is only the runner preload (happy-dom, Testing Library cleanup, MSW), not a test suite. MSW handlers live in `@repo/mocks`.
+
+```sh
+bun test
+bun test --watch
+bun test --coverage
+```
+
+End-to-end tests live in `e2e/<app>` (Playwright). They depend on a production `web` build:
+
+```sh
+bunx playwright install chromium   # once
+bun run e2e                        # turbo build + playwright
+```
+
+Playwright files are `*.spec.ts` so they are not picked up by `bun test`.
 
 ### Develop
 

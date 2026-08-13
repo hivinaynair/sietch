@@ -1,0 +1,4 @@
+[test]
+preload = ["./test/happydom.ts", "./test/setup.ts"]
+coverageSkipTestFiles = true
+pathIgnorePatterns = ["**/*.spec.ts", "**/playwright-report/**", "**/test-results/**"]

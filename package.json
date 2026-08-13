@@ -6,24 +6,42 @@
     "dev": "turbo run dev",
     "format-and-lint": "biome check .",
     "format-and-lint:fix": "biome check . --write",
-    "check-types": "turbo run check-types"
+    "check-types": "turbo run check-types",
+    "test": "bun test",
+    "e2e": "turbo run e2e",
+    "check-boundaries": "bun scripts/check-boundaries.mjs",
+    "preinstall": "bunx only-allow@1.2.2 bun",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",
+    "@happy-dom/global-registrator": "^20.11.2",
+    "@repo/mocks": "*",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/bun": "^1.3.14",
+    "dependency-cruiser": "^17.3.10",
+    "lefthook": "^2.1.10",
     "turbo": "^2.10.9",
     "typescript": "5.9.2"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.9.0",
+    "bun": ">=1.4.0"
   },
+  "packageManager": "bun@1.4.0",
   "devEngines": {
     "packageManager": {
       "name": "bun",
-      "version": "1.4.0"
+      "version": "1.4.0",
+      "onFail": "error"
     }
   },
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "e2e/*",
+    "tooling/*"
   ]
 }

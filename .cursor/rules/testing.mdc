@@ -1,0 +1,29 @@
+---
+description: bun:test for unit/integration, Playwright for E2E, MSW for HTTP stubs
+globs: "**/*.{test,spec}.{ts,tsx}"
+alwaysApply: false
+---
+
+# Testing
+
+Do not add Vitest or Jest.
+
+## Unit and integration (`bun:test`)
+
+```ts
+import { test, expect, mock } from "bun:test";
+```
+
+- Colocate as `*.test.ts` / `*.test.tsx` (including `*.integration.test.ts`)
+- React: `@testing-library/react` (`getByRole`)
+- Mocks: `mock()` from `bun:test`, not `vi.fn`
+- Runner bootstrap stays at repo-root `test/` (`happydom.ts`, `setup.ts`), preloaded from `bunfig.toml`. Do not move it into a workspace package.
+- External HTTP: shared handlers in `@repo/mocks`, already started in `test/setup.ts`
+- Override per test with `server.use(...)` from `@repo/mocks/server`
+
+## End-to-end (Playwright)
+
+- Live in `e2e/<app>` (e.g. `e2e/web`), files named `*.spec.ts` so `bun test` ignores them
+- Import `test` / `expect` from `../playwright.setup`, not `@playwright/test`
+- Use `network.use(...)` to override MSW handlers for one test
+- Async Server Components, auth, cookies, and real navigation belong here

@@ -1,0 +1,18 @@
+---
+description: Feature folders in Next.js apps — no cross-feature imports
+globs: apps/*/src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Feature modules (`apps/<app>/src`)
+
+Applies to every Next.js app under `apps/`.
+
+- `app/` — routes only. Pages import from `@/features/<name>`.
+- `features/<name>/` — one domain. Repeat `components/`, `hooks/`, `lib/`, `server/queries/`, `server/actions/` as needed.
+- `shared/` — this app only; never import a feature.
+- Cross-app or real libraries go in `packages/`.
+
+`features/a` must not import `features/b`. Compose in `app/`, or hoist to `shared/` / `packages/`.
+
+Inside a feature, use relative imports. Do not import `@/features/...` from another feature.

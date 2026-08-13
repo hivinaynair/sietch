@@ -1,0 +1,22 @@
+{
+  "name": "@repo/mocks",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./handlers": "./src/handlers.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "msw": "^2.12.10"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/bun": "^1.3.14",
+    "typescript": "5.9.2"
+  }
+}

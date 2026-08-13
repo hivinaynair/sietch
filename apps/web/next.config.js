@@ -1,4 +1,9 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {};
+import { resolve } from "node:path";
+import { withWorkflow } from "workflow/next";
 
-export default nextConfig;
+/** @type {import("next").NextConfig} */
+const nextConfig = {
+  outputFileTracingRoot: resolve(import.meta.dirname, "../.."),
+};
+
+export default withWorkflow(nextConfig);

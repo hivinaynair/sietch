@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/public"]
+    "includes": ["**", "!**/public", "!**/playwright-report", "!**/test-results"]
   },
   "formatter": {
     "enabled": true,
@@ -18,7 +18,15 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "style": {
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "options": {
+            "style": "type"
+          }
+        }
+      }
     },
     "domains": {
       "react": "recommended",
@@ -46,5 +54,27 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["apps/*/src/features/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/features", "@/features/**"],
+                    "message": "Features cannot import other features. Use relative imports inside the feature, or hoist shared code to src/shared or packages/."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
