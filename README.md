@@ -1,210 +1,86 @@
-# Turborepo starter
+# ViperNxt
 
-This Turborepo starter is maintained by the Turborepo core team.
+Bun-only [Turborepo](https://turborepo.dev) boilerplate for a Next.js SaaS: one app (`apps/web`), shared UI, Clerk, Zod 4, and Vercel Workflows. Clone it, answer the prompt below, then start building product.
 
-## Using this example
+**Requires** [Bun](https://bun.sh) `1.4.x` (see `packageManager` in `package.json`). Installs with anything else will fail (`only-allow bun`).
 
-Run the following command:
+## Layout
 
-```sh
-npx create-turbo@latest
-```
+| Path | Role |
+|------|------|
+| `apps/web` | Next.js App Router (`src/app` routes, `src/features/*` domains, `src/shared`) |
+| `packages/ui` | Shared React components (`@repo/ui`) |
+| `tooling/typescript-config` | Shared `tsconfig`s |
+| `tooling/mocks` | Shared [MSW](https://mswjs.io/) handlers (`@repo/mocks`) |
+| `tooling/dependency-cruiser` | Feature-folder import rules |
+| `e2e/web` | Playwright for `web` |
+| `test/` | `bun test` runner preload only (not a suite) |
 
-## What's inside?
+Features must not import each other. Compose in `app/`, or hoist to `shared/` / `packages/`. `bun run check-boundaries` enforces that.
 
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `web`: a [Next.js](https://nextjs.org/) app (`apps/web`). Every Next app under `apps/` uses the same `src/` layout:
-  - `app/` — routes only
-  - `features/<name>/` — isolated domains (`components/`, `hooks/`, `lib/`, `server/queries/`, `server/actions/`)
-  - `shared/` — that app only; never import a feature
-  - Stack: [Zod 4](https://zod.dev/), [Clerk](https://clerk.com/) (`@clerk/nextjs`), [Vercel Workflow](https://useworkflow.dev) (`workflow`)
-- `@repo/ui`: a shared React component library used by `web`
-
-### Tooling
-
-- `@repo/typescript-config`: shared `tsconfig.json`s (`tooling/typescript-config`)
-- `@repo/mocks`: shared [MSW](https://mswjs.io/) handlers (`tooling/mocks`)
-- `@repo/web-e2e`: Playwright tests for `web` (`e2e/web`)
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [Biome](https://biomejs.dev/) for linting and formatting
-- [Lefthook](https://github.com/evilmartians/lefthook) for Git hooks
-- [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) for Next.js feature boundaries in `apps/*` (`bun run check-boundaries`)
-- [`bun test`](https://bun.com/docs/cli/test) for unit and integration tests
-- [Playwright](https://playwright.dev/) for end-to-end tests
-- [MSW](https://mswjs.io/) for shared HTTP mocks
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+## Commands
 
 ```sh
-cd my-turborepo
-turbo build
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo build
-bun dlx turbo build
-bun exec turbo build
-```
-
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=web
-bun exec turbo build --filter=web
-```
-
-### Git hooks
-
-Lefthook runs before each commit (installed automatically via `bun install`):
-
-| Hook | What it does |
-|------|----------------|
-| **Biome** | Formats and lints staged files |
-| **check-boundaries** | Runs dependency-cruiser on every Next.js app under `apps/` when `src` TypeScript is staged — blocks feature-to-feature and `shared` → `features` imports |
-| **check-types** | Runs `turbo run check-types --filter=...[HEAD]` when `.ts`/`.tsx` files are staged — typechecks changed packages **and their dependents** (e.g. changing `@repo/ui` also checks `web`) |
-
-To dry-run the pre-commit hook manually:
-
-```sh
-bunx lefthook run pre-commit
-```
-
-To skip hooks for a single commit:
-
-```sh
-LEFTHOOK=0 git commit -m "message"
-```
-
-### Test
-
-Unit and integration tests use Bun (`bun:test`) with React Testing Library. Specs live next to source (`*.test.ts`). Root `test/` is only the runner preload (happy-dom, Testing Library cleanup, MSW), not a test suite. MSW handlers live in `@repo/mocks`.
-
-```sh
+bun install
+bun run dev              # all apps
+bun run build
+bun run check-types
+bun run check-boundaries
 bun test
-bun test --watch
-bun test --coverage
-```
-
-End-to-end tests live in `e2e/<app>` (Playwright). They depend on a production `web` build:
-
-```sh
 bunx playwright install chromium   # once
-bun run e2e                        # turbo build + playwright
+bun run e2e
+bun run format-and-lint
 ```
 
-Playwright files are `*.spec.ts` so they are not picked up by `bun test`.
+Lefthook runs Biome, boundaries, and affected typechecks on commit (`lefthook install` via `prepare`).
 
-### Develop
+Clerk keys: copy `apps/web/.env.example` → `apps/web/.env.local`, or use keyless in `next dev`.
 
-To develop all apps and packages, run the following command:
+## Customize this clone
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+Paste the following into Cursor (or any coding agent) in this repo. It should **ask these questions one at a time**, then apply the answers. Skip anything you want to leave as-is.
 
-```sh
-cd my-turborepo
-turbo dev
-```
+````markdown
+You are customizing this ViperNxt clone. Use Bun only (`bun`, `bunx`, `bun test`).
+Do not add Vitest, ESLint, or another package manager. Keep feature-folder
+boundaries (`app` / `features` / `shared`). After edits: `bun install`,
+`bun run check-types`, `bun run check-boundaries`.
 
-Without global `turbo`, use your package manager:
+Ask one question at a time. Wait for the answer before the next.
 
-```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
-```
+1. Product name (human title) and repo/package name (npm-safe, e.g. `acme`)?
+   Today the root package is `vipernxt`. Rename `package.json`, README title,
+   and any user-facing “ViperNxt” / “Create Next App” copy.
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+2. Workspace scope instead of `@repo` (e.g. `@acme`)? Update every
+   `package.json` `name` / dependency and tsconfig `extends`.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+3. Rename `apps/web` (and matching `e2e/web`)? Keep `web` if unsure.
+   Update workspace names, Playwright `webDir`, filters, and docs.
 
-```sh
-turbo dev --filter=web
-```
+4. Extra Next.js apps now (e.g. `marketing`, `admin`)? Scaffold the same
+   `src/app` + `src/features` + `src/shared` layout, or skip.
 
-Without global `turbo`:
+5. Auth: keep Clerk, strip it, or keep it and enable organizations (B2B)?
+   Stripping must remove `@clerk/nextjs`, `src/proxy.ts`, `ClerkProvider`,
+   `features/auth`, and env examples.
 
-```sh
-npx turbo dev --filter=web
-bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
-```
+6. Keep Vercel Workflows (`workflow` + `withWorkflow` in `next.config`)?
+   Remove the package and wrapper if not.
 
-### Remote Caching
+7. Default site metadata (title, description, `lang` on `<html>`)?
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+Apply only what was answered. Do not invent a product, database, or UI kit.
+````
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+Later, when you add a database, billing, or shadcn, extend this prompt — those are not in the tree yet.
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+## Links
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- [Turborepo](https://turborepo.dev/docs)
+- [Next.js](https://nextjs.org/docs)
+- [Clerk](https://clerk.com/docs)
+- [Zod](https://zod.dev)
+- [Workflow DevKit](https://useworkflow.dev)
+- [Biome](https://biomejs.dev)
+- [Bun test](https://bun.com/docs/cli/test)
