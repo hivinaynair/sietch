@@ -9,7 +9,7 @@ Bun-only [Turborepo](https://turborepo.dev) boilerplate for a Next.js SaaS: one 
 | Path | Role |
 |------|------|
 | `apps/web` | Next.js App Router (`src/app` routes, `src/features/*` domains, `src/shared`) |
-| `packages/ui` | Shared React components (`@repo/ui`) |
+| `packages/db` | Drizzle ORM 1 (beta) + Neon (`@repo/db`) |
 | `tooling/typescript-config` | Shared `tsconfig`s |
 | `tooling/mocks` | Shared [MSW](https://mswjs.io/) handlers (`@repo/mocks`) |
 | `tooling/dependency-cruiser` | Feature-folder import rules |
@@ -29,12 +29,17 @@ bun run check-boundaries
 bun test
 bunx playwright install chromium   # once
 bun run e2e
-bun run format-and-lint
+bun run db:generate
+bun run db:migrate
+bun run db:push
+bun run db:studio
 ```
 
 Lefthook runs Biome, boundaries, and affected typechecks on commit (`lefthook install` via `prepare`).
 
 Clerk keys: copy `apps/web/.env.example` → `apps/web/.env.local`, or use keyless in `next dev`.
+
+Neon: set `DATABASE_URL` (pooled, hostname has `-pooler`) for the app and `DATABASE_URL_UNPOOLED` (direct) for `db:migrate` / `db:push`. Schema lives in `packages/db`. Import `db` from `@repo/db` only in Server Components, Server Actions, Route Handlers, or `"use step"` functions.
 
 ## Customize this clone
 
@@ -70,17 +75,20 @@ Ask one question at a time. Wait for the answer before the next.
 
 7. Default site metadata (title, description, `lang` on `<html>`)?
 
-Apply only what was answered. Do not invent a product, database, or UI kit.
+8. Database: keep Drizzle + Neon (`@repo/db`), or strip it?
+
+Apply only what was answered. Do not invent a product or UI kit.
 ````
 
-Later, when you add a database, billing, or shadcn, extend this prompt — those are not in the tree yet.
+Later, when you add billing or shadcn, extend this prompt — those are not in the tree yet.
 
 ## Links
 
 - [Turborepo](https://turborepo.dev/docs)
 - [Next.js](https://nextjs.org/docs)
 - [Clerk](https://clerk.com/docs)
-- [Zod](https://zod.dev)
+- [Drizzle ORM](https://orm.drizzle.team)
+- [Neon](https://neon.com/docs)
 - [Workflow DevKit](https://useworkflow.dev)
 - [Biome](https://biomejs.dev)
 - [Bun test](https://bun.com/docs/cli/test)

@@ -7,7 +7,13 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/public", "!**/playwright-report", "!**/test-results"]
+    "includes": [
+      "**",
+      "!**/public",
+      "!**/playwright-report",
+      "!**/test-results",
+      "!**/packages/db/drizzle"
+    ]
   },
   "formatter": {
     "enabled": true,

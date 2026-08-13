@@ -17,6 +17,22 @@
     "check-types": {
       "dependsOn": ["^check-types"]
     },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false,
+      "passThroughEnv": ["DATABASE_URL", "DATABASE_URL_UNPOOLED"]
+    },
+    "db:push": {
+      "cache": false,
+      "passThroughEnv": ["DATABASE_URL", "DATABASE_URL_UNPOOLED"]
+    },
+    "db:studio": {
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": ["DATABASE_URL", "DATABASE_URL_UNPOOLED"]
+    },
     "//#check-boundaries": {
       "description": "Enforce Next.js feature folder boundaries in apps/*"
     },
