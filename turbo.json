@@ -15,22 +15,27 @@
       "description": "Format and lint the code and fix the issues"
     },
     "check-types": {
-      "dependsOn": ["^check-types"]
+      "dependsOn": ["^check-types"],
+      "passThroughEnv": ["SKIP_ENV_VALIDATION"]
     },
     "db:generate": {
-      "cache": false
+      "cache": false,
+      "envMode": "loose"
     },
     "db:migrate": {
       "cache": false,
+      "envMode": "loose",
       "passThroughEnv": ["DATABASE_URL", "DATABASE_URL_UNPOOLED"]
     },
     "db:push": {
       "cache": false,
+      "envMode": "loose",
       "passThroughEnv": ["DATABASE_URL", "DATABASE_URL_UNPOOLED"]
     },
     "db:studio": {
       "cache": false,
       "persistent": true,
+      "envMode": "loose",
       "passThroughEnv": ["DATABASE_URL", "DATABASE_URL_UNPOOLED"]
     },
     "//#check-boundaries": {
@@ -44,6 +49,9 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "add": {
+      "cache": false
     }
   }
 }

@@ -1,17 +1,13 @@
 import { ClerkProvider } from "@clerk/nextjs";
+import { Toaster } from "@repo/ui/components/sonner";
+import { TooltipProvider } from "@repo/ui/components/tooltip";
+import { cn } from "@repo/ui/lib/utils";
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Inter } from "next/font/google";
 import { AuthHeader } from "@/features/auth/components/auth-header";
 import "./globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-});
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -24,11 +20,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={cn("font-sans", inter.variable)}>
+      <body className="antialiased">
         <ClerkProvider>
-          <AuthHeader />
-          {children}
+          <TooltipProvider>
+            <AuthHeader />
+            {children}
+            <Toaster />
+          </TooltipProvider>
         </ClerkProvider>
       </body>
     </html>

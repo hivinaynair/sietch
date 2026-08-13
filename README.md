@@ -1,6 +1,6 @@
 # ViperNxt
 
-Bun-only [Turborepo](https://turborepo.dev) boilerplate for a Next.js SaaS: one app (`apps/web`), shared UI, Clerk, Zod 4, and Vercel Workflows. Clone it, answer the prompt below, then start building product.
+Bun-only [Turborepo](https://turborepo.dev) boilerplate for a Next.js SaaS: one app (`apps/web`), shared UI, Clerk, Zod 4, [shadcn/ui](https://ui.shadcn.com), and Vercel Workflows. Clone it, answer the prompt below, then start building product.
 
 **Requires** [Bun](https://bun.sh) `1.4.x` (see `packageManager` in `package.json`). Installs with anything else will fail (`only-allow bun`).
 
@@ -9,6 +9,7 @@ Bun-only [Turborepo](https://turborepo.dev) boilerplate for a Next.js SaaS: one 
 | Path | Role |
 |------|------|
 | `apps/web` | Next.js App Router (`src/app` routes, `src/features/*` domains, `src/shared`) |
+| `packages/ui` | shadcn/ui (`@repo/ui`) — never install components into `apps/web` |
 | `packages/db` | Drizzle ORM 1 (beta) + Neon (`@repo/db`) |
 | `tooling/typescript-config` | Shared `tsconfig`s |
 | `tooling/mocks` | Shared [MSW](https://mswjs.io/) handlers (`@repo/mocks`) |
@@ -29,15 +30,16 @@ bun run check-boundaries
 bun test
 bunx playwright install chromium   # once
 bun run e2e
-bun run db:generate
-bun run db:migrate
-bun run db:push
-bun run db:studio
+bun run db generate
+bun run db migrate
+bun run db push
+bun run db studio
+bun run ui:add -- button   # shadcn CLI in packages/ui (Turbo)
 ```
 
 Lefthook runs Biome, boundaries, and affected typechecks on commit (`lefthook install` via `prepare`).
 
-Clerk keys: copy `apps/web/.env.example` → `apps/web/.env.local`, or use keyless in `next dev`.
+Clerk keys: copy `apps/web/.env.example` → `apps/web/.env.local`, or use keyless in `next dev`. Env vars are validated by `@t3-oss/env-nextjs` in `apps/web/src/env.ts` — import `env` from `@/env` instead of `process.env`. Typecheck sets `SKIP_ENV_VALIDATION=1` so it can run without secrets.
 
 Neon: set `DATABASE_URL` (pooled, hostname has `-pooler`) for the app and `DATABASE_URL_UNPOOLED` (direct) for `db:migrate` / `db:push`. Schema lives in `packages/db`. Import `db` from `@repo/db` only in Server Components, Server Actions, Route Handlers, or `"use step"` functions.
 
@@ -80,7 +82,7 @@ Ask one question at a time. Wait for the answer before the next.
 Apply only what was answered. Do not invent a product or UI kit.
 ````
 
-Later, when you add billing or shadcn, extend this prompt — those are not in the tree yet.
+Later, when you add billing, extend this prompt — that is not in the tree yet.
 
 ## Links
 
@@ -89,6 +91,7 @@ Later, when you add billing or shadcn, extend this prompt — those are not in t
 - [Clerk](https://clerk.com/docs)
 - [Drizzle ORM](https://orm.drizzle.team)
 - [Neon](https://neon.com/docs)
+- [shadcn/ui](https://ui.shadcn.com)
 - [Workflow DevKit](https://useworkflow.dev)
 - [Biome](https://biomejs.dev)
 - [Bun test](https://bun.com/docs/cli/test)
