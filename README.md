@@ -43,6 +43,19 @@ Clerk keys: copy `apps/web/.env.example` → `apps/web/.env.local`, or use keyle
 
 Neon: set `DATABASE_URL` (pooled, hostname has `-pooler`) for the app and `DATABASE_URL_UNPOOLED` (direct) for `db:migrate` / `db:push`. Schema lives in `packages/db`. Import `db` from `@repo/db` only in Server Components, Server Actions, Route Handlers, or `"use step"` functions.
 
+## Branches and production migrate
+
+| Branch | Role |
+|--------|------|
+| `staging` | Check-in branch. Open PRs against this. |
+| `main` | Production (customers). Merge `staging` → `main` to release. |
+
+On every push to `staging` or `main`, [Migrate database](.github/workflows/migrate.yml) runs `bun run db migrate` (`drizzle-kit migrate`). It is a no-op when nothing is pending, and it skips entirely until `packages/db/drizzle/meta/_journal.json` exists.
+
+Create GitHub Environments named `staging` and `production`. Each needs a secret `DATABASE_URL_UNPOOLED` pointing at a **different** Neon database (direct hostname, no `-pooler`). Vercel still deploys from Git; keep migrations additive (expand/contract) so the running app stays compatible. A failed migrate job does not roll back the deploy — fix forward, and do not merge to `main` until the same files have already migrated on staging.
+
+After the first push of `staging`, set it as the GitHub default branch so new PRs target it.
+
 ## Customize this clone
 
 Paste the following into Cursor (or any coding agent) in this repo. It should **ask these questions one at a time**, then apply the answers. Skip anything you want to leave as-is.
