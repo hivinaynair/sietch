@@ -5,7 +5,7 @@ import "./src/env";
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: resolve(import.meta.dirname, "../.."),
-  transpilePackages: ["@repo/ui"],
+  transpilePackages: ["@repo/ui", "@splinetool/react-spline", "@splinetool/runtime"],
 };
 
 export default withWorkflow(nextConfig);

@@ -11,8 +11,11 @@ use sietch_policy::{
 /// Demo T-bill token address. Later this is the ERC-20 on the desk.
 pub const DEMO_TBILL: [u8; 20] = [0x33; 20];
 
-/// Clip transfer id. Same instruction, two attempts (deny then settle).
+/// Clip transfer id for the first instruct (Chani allow, Paul deny).
 pub const CLIP_TRANSFER: [u8; 32] = [0x44; 32];
+
+/// Second instruct after inbound v2. New id so the Desk cannot replay send 1.
+pub const CLIP_TRANSFER_RETRY: [u8; 32] = [0x45; 32];
 
 /// Fixed stdin size. Concatenating two guests is `2 * STDIN_LEN` and must fail.
 pub const STDIN_LEN: usize = 146;

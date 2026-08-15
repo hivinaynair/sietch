@@ -5,7 +5,8 @@
 
 use sietch_policy::{OrgId, Side};
 use sietch_policy_guest::{
-    decode_public, encode_public, encode_stdin, GuestInput, PublicValues, CLIP_TRANSFER, DEMO_TBILL,
+    decode_public, encode_public, encode_stdin, GuestInput, PublicValues, CLIP_TRANSFER,
+    CLIP_TRANSFER_RETRY, DEMO_TBILL,
 };
 use sp1_sdk::{include_elf, Elf, Prover, ProverClient, SP1PublicValues, SP1Stdin};
 
@@ -23,6 +24,16 @@ pub fn read_public(public_values: &SP1PublicValues) -> PublicValues {
 }
 
 pub fn clip_input(org: OrgId, side: Side, origin: sietch_policy::Book, open: bool) -> GuestInput {
+    clip_input_id(org, side, origin, open, CLIP_TRANSFER)
+}
+
+pub fn clip_input_id(
+    org: OrgId,
+    side: Side,
+    origin: sietch_policy::Book,
+    open: bool,
+    transfer_id: [u8; 32],
+) -> GuestInput {
     GuestInput {
         policy: sietch_policy::Policy {
             max_amount: 10,
@@ -35,7 +46,58 @@ pub fn clip_input(org: OrgId, side: Side, origin: sietch_policy::Book, open: boo
         side,
         org,
         token: DEMO_TBILL,
-        transfer_id: CLIP_TRANSFER,
+        transfer_id,
+    }
+}
+
+/// One frozen receipt for the public clip. Isolated stdin. Never both policies.
+pub struct ClipCase {
+    pub slug: &'static str,
+    pub seat: &'static str,
+    pub side_label: &'static str,
+    pub input: GuestInput,
+}
+
+pub fn clip_case(slug: &str) -> Option<ClipCase> {
+    use sietch_policy::{Book, Side, CHANI_INSTITUTION, PAUL_INSTITUTION};
+    match slug {
+        "chani-outbound" => Some(ClipCase {
+            slug: "chani-outbound",
+            seat: "chani-institution",
+            side_label: "outbound",
+            input: clip_input(CHANI_INSTITUTION, Side::Outbound, Book::India, false),
+        }),
+        "paul-inbound-v1" => Some(ClipCase {
+            slug: "paul-inbound-v1",
+            seat: "paul-institution",
+            side_label: "inbound",
+            input: clip_input(PAUL_INSTITUTION, Side::Inbound, Book::India, false),
+        }),
+        "chani-outbound-retry" => Some(ClipCase {
+            slug: "chani-outbound-retry",
+            seat: "chani-institution",
+            side_label: "outbound",
+            input: clip_input_id(
+                CHANI_INSTITUTION,
+                Side::Outbound,
+                Book::India,
+                false,
+                CLIP_TRANSFER_RETRY,
+            ),
+        }),
+        "paul-inbound-v2" => Some(ClipCase {
+            slug: "paul-inbound-v2",
+            seat: "paul-institution",
+            side_label: "inbound",
+            input: clip_input_id(
+                PAUL_INSTITUTION,
+                Side::Inbound,
+                Book::India,
+                true,
+                CLIP_TRANSFER_RETRY,
+            ),
+        }),
+        _ => None,
     }
 }
 
@@ -95,6 +157,19 @@ mod tests {
             cycles < MAX_EXECUTE_CYCLES,
             "execute should stay tiny, got {cycles} cycles"
         );
+    }
+
+    #[test]
+    fn clip_cases_pair_by_transfer_id() {
+        let send1_out = super::clip_case("chani-outbound").unwrap();
+        let send1_in = super::clip_case("paul-inbound-v1").unwrap();
+        let send2_out = super::clip_case("chani-outbound-retry").unwrap();
+        let send2_in = super::clip_case("paul-inbound-v2").unwrap();
+        assert_eq!(send1_out.input.transfer_id, send1_in.input.transfer_id);
+        assert_eq!(send2_out.input.transfer_id, send2_in.input.transfer_id);
+        assert_ne!(send1_out.input.transfer_id, send2_out.input.transfer_id);
+        assert!(!send1_in.input.policy.accepts_cross_border);
+        assert!(send2_in.input.policy.accepts_cross_border);
     }
 
     #[tokio::test]

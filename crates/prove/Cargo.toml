@@ -11,7 +11,7 @@ hex = "0.4.3"
 sietch-policy = { path = "../policy" }
 sietch-policy-guest = { path = "../policy-guest" }
 serde_json = "1"
-sp1-sdk = "6.4.0"
+sp1-sdk = { version = "6.4.0", features = ["network"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [[bin]]

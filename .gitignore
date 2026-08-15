@@ -42,3 +42,11 @@ contracts/cache
 contracts/out
 contracts/broadcast
 
+# Rust / SP1
+target/
+**/target/
+
+# Python
+__pycache__/
+*.pyc
+

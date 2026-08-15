@@ -617,29 +617,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sietch-policy"
-version = "0.1.0"
-dependencies = [
- "hex",
- "tiny-keccak",
-]
-
-[[package]]
-name = "sietch-policy-guest"
-version = "0.1.0"
-dependencies = [
- "sietch-policy",
-]
-
-[[package]]
-name = "sietch-policy-program"
-version = "0.1.0"
-dependencies = [
- "sietch-policy-guest",
- "sp1-zkvm",
-]
-
-[[package]]
 name = "quote"
 version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -769,6 +746,29 @@ name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
+
+[[package]]
+name = "sietch-policy"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "tiny-keccak",
+]
+
+[[package]]
+name = "sietch-policy-guest"
+version = "0.1.0"
+dependencies = [
+ "sietch-policy",
+]
+
+[[package]]
+name = "sietch-policy-program"
+version = "0.1.0"
+dependencies = [
+ "sietch-policy-guest",
+ "sp1-zkvm",
+]
 
 [[package]]
 name = "slab"

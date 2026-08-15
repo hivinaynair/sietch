@@ -2,9 +2,10 @@
 
 `chani-outbound.execute.json` is **execute only** (public values + program vkey). `proof` is null until Groth16 runs.
 
-Groth16 needs Docker (≥16GB RAM) or `NETWORK_PRIVATE_KEY` (Succinct network), then:
+Groth16 is requested from Modal via the Succinct network (`NETWORK_PRIVATE_KEY`), not proved in the browser:
 
 ```bash
-export PATH="$HOME/.sp1/bin:$PATH"
-cargo run -p sietch-prove --bin prove-one
+NETWORK_PRIVATE_KEY=0x... modal run apps/modal/prove.py
 ```
+
+A successful run writes `chani-outbound.groth16.json` here. Keep the execute json.
