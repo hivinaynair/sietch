@@ -1,6 +1,6 @@
 # Noir vs SP1 (research)
 
-Comparison for Qanat: prove an inbound institutional policy at settlement without putting clauses on-chain.
+Comparison for Sietch: prove an inbound institutional policy at settlement without putting clauses on-chain.
 
 Sources accessed 2026-08-15:
 
@@ -25,7 +25,7 @@ SP1 Groth16 gateway (84532): `0x397A5f7f3dBd538f23DE225B51f532c34448dA9B`. Appli
 
 Noir: you generate and **deploy your own** verifier bytecode per circuit. Nothing equivalent to Succinct’s gateway is assumed on Base.
 
-## Fit for Qanat
+## Fit for Sietch
 
 | | Noir | SP1 |
 |---|---|---|

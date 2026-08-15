@@ -1,0 +1,18 @@
+[package]
+name = "sietch-policy-guest"
+version = "0.1.0"
+edition = "2021"
+description = "One-institution guest I/O around sietch-policy. Later wrapped by SP1 io::read / commit."
+license = "MIT"
+
+[dependencies]
+sietch-policy = { path = "../policy" }
+
+[dev-dependencies]
+hex = "0.4.3"
+pretty_assertions = "1.4.1"
+rstest = "0.26.1"
+
+[lib]
+name = "sietch_policy_guest"
+path = "src/lib.rs"

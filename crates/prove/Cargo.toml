@@ -1,0 +1,30 @@
+[package]
+name = "sietch-prove"
+version = "0.1.0"
+edition = "2021"
+description = "Host: execute (and later Groth16) the policy program with isolated stdin."
+license = "MIT"
+publish = false
+
+[dependencies]
+hex = "0.4.3"
+sietch-policy = { path = "../policy" }
+sietch-policy-guest = { path = "../policy-guest" }
+serde_json = "1"
+sp1-sdk = "6.4.0"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[[bin]]
+name = "prove-one"
+path = "src/bin/prove_one.rs"
+
+[build-dependencies]
+sp1-build = "6.4.0"
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"
+rstest = "0.26.1"
+
+[lib]
+name = "sietch_prove"
+path = "src/lib.rs"

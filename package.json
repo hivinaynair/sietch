@@ -1,5 +1,5 @@
 {
-  "name": "qanat",
+  "name": "sietch",
   "private": true,
   "scripts": {
     "build": "turbo run build",

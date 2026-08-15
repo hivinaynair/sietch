@@ -1,8 +1,12 @@
-# Qanat
+# Sietch
 
-Hidden channels under the sand: two institutions settle a tokenized T-bill so the chain learns only `valid` or `invalid` — not the inbound policy.
+Hidden channels under the sand: two institutions settle a tokenized T-bill so the chain learns only `valid` or `invalid` — not the inbound T-bill policy.
 
-Not a chain. A stand-in for Metal’s inter-institutional settlement: Next.js settlement room + a tiny SP1 policy guest, verified on Base Sepolia.
+Each institution issues its **own** receipt. Settlement is the AND of both. The network never sees the clauses.
+
+Design (read this first): [`docs/plans/2026-08-15-sietch-design.md`](docs/plans/2026-08-15-sietch-design.md).
+
+Not a chain. A stand-in for Metal’s inter-institutional settlement: Next.js settlement room + a tiny SP1 policy guest (one program, two executes), verified on Base Sepolia. Instant means verify, not prove in the browser.
 
 **Requires** [Bun](https://bun.sh) `1.4.x`. Installs with anything else will fail (`only-allow bun`).
 

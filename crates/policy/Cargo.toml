@@ -1,0 +1,18 @@
+[package]
+name = "sietch-policy"
+version = "0.1.0"
+edition = "2021"
+description = "Private T-bill policy checker used by the SP1 guest. One institution per call."
+license = "MIT"
+
+[dependencies]
+hex = "0.4.3"
+tiny-keccak = { version = "2.0.2", features = ["keccak"] }
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"
+rstest = "0.26.1"
+
+[lib]
+name = "sietch_policy"
+path = "src/lib.rs"

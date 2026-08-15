@@ -10,7 +10,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Qanat",
+  title: "Sietch",
   description:
     "Inter-institutional settlement: inbound policy stays private; the chain learns only valid or invalid.",
 };
