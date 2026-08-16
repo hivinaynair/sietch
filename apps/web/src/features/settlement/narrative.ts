@@ -128,23 +128,40 @@ export function whatJustHappened(phase: Phase): string {
   }
 }
 
-export type Ledger = { read: readonly string[]; never: readonly string[] };
+export type Ledger = {
+  read: readonly string[];
+  never: readonly string[];
+  /**
+   * The honest scope on the second column. Withholding bytes from the wire is not the same
+   * as hiding them, and for a two-field policy under an unsalted hash it is much weaker.
+   * Stated here rather than left for the reader to work out, because the reader who works
+   * it out on his own has caught us claiming something we did not earn.
+   */
+  caveat: string;
+};
 
-/** What the chain took from this beat, against what it still cannot read. The whole payload. */
+const CAVEAT =
+  "Withheld from the wire is not the same as hidden. A v1 policy is a ceiling and one flag under an unsalted hash, so anything its seal covers falls to enumeration in under 200 guesses. The blinded commitment that closes this is implemented and tested in crates/policy; wiring it changes the vkey, so this clip still publishes the v1 seal. See known limits.";
+
+/**
+ * What settlement disclosed, against what it kept off the wire — scoped by `caveat`, which
+ * is load-bearing rather than a footnote. The second column is the product, and a viewer who
+ * reads only the first one has missed it.
+ */
 export function ledger(phase: Phase): Ledger {
   const never = [
-    "Either institution’s inbound or outbound clauses",
-    "Which clause stopped the delivery",
-    "The other institution’s policy — one policy per stdin, never both",
+    "The other institution’s policy — one policy per stdin, a fixed buffer, never both",
+    "Which clause refused the delivery — the desk emits no such field",
+    "The clauses in bytes — only their seals were transmitted",
   ] as const;
 
   if (phase === "idle") {
-    return { read: ["Nothing yet — Chani has not instructed"], never };
+    return { read: ["Nothing yet — Chani has not instructed"], never, caveat: CAVEAT };
   }
 
   const read = [
     "Two booleans: outbound allowed, inbound allowed",
-    "Two policy hashes — the seal, not the clauses",
+    "Two policy seals — v1’s is enumerable, so treat its clauses as public",
     "Chani, Paul, both institutions, token, amount",
     "One transfer id per attempt, consumed once",
   ];
@@ -152,6 +169,7 @@ export function ledger(phase: Phase): Ledger {
   return {
     read: phase === "settled" ? [...read, "That both receipts verified for this vkey"] : read,
     never,
+    caveat: CAVEAT,
   };
 }
 

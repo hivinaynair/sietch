@@ -69,6 +69,36 @@ test("the ledger always names what the chain cannot read", () => {
   expect(ledger("idle").read.join(" ")).toContain("Nothing yet");
 });
 
+test("the ledger never claims the seal hides the clauses", () => {
+  for (const phase of PHASES) {
+    const { read, never } = ledger(phase);
+    expect([...read, ...never].join(" ")).not.toContain("the seal, not the clauses");
+  }
+});
+
+test("the disclosed column admits the v1 seal is enumerable", () => {
+  for (const phase of PHASES.filter((p) => p !== "idle")) {
+    expect(ledger(phase).read.join(" ")).toMatch(/enumerab/i);
+  }
+});
+
+test("the caveat scopes the withheld column at every beat, and names the fix", () => {
+  for (const phase of PHASES) {
+    const { caveat } = ledger(phase);
+    expect(caveat).toMatch(/enumerat/i);
+    expect(caveat).toContain("crates/policy");
+    expect(caveat).toContain("known limits");
+  }
+});
+
+test("the withheld column only claims what stayed off the wire", () => {
+  const { never } = ledger("settled");
+  expect(never.join(" ")).toContain("one policy per stdin");
+  expect(never.join(" ")).toContain("only their seals were transmitted");
+  // "never saw" was the overclaim: the seal is transmitted and v1's seal gives up its clauses.
+  expect(never.join(" ")).not.toMatch(/never saw|cannot read/i);
+});
+
 test("the room speaks once per beat, and says the pair", () => {
   expect(announcement("idle")).toContain("Nothing instructed");
   expect(announcement("pending")).toBe(
