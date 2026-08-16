@@ -1,3 +1,4 @@
 {
+  "installCommand": "bun install --ignore-scripts",
   "buildCommand": "cd ../.. && bunx turbo run build --filter=web"
 }

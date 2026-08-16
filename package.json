@@ -16,7 +16,7 @@
     "db:migrate": "turbo run db:migrate --filter=@repo/db",
     "db:studio": "turbo run db:studio --filter=@repo/db",
     "preinstall": "bunx only-allow@1.2.2 bun",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install || true"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",
