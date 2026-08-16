@@ -4,7 +4,8 @@ import { baseSepolia } from "viem/chains";
 import { DEPLOY_BLOCK } from "./chain";
 import type { Phase } from "./clip";
 import { POLICY_HASH_V2, RECEIVER_ORG, TRANSFER_ATTEMPT_2 } from "./clip-artifacts";
-import { stipendToSend } from "./clip-error";
+import { parseHaveWant, stipendToSend } from "./clip-error";
+import { topUpClerk } from "./clip-faucet";
 import { groth16Receipt } from "./clip-receipts";
 import { DESK_ABI, FACTORY_ABI, TBILL_ABI } from "./desk-abi";
 import {
@@ -226,21 +227,21 @@ export async function advanceClip(): Promise<ClipRoomState> {
     transport: http(RPC),
   });
 
-  const hash =
+  const hash = await withFaucet(client, account.address, () =>
     write === "publish"
-      ? await wallet.writeContract({
+      ? wallet.writeContract({
           address: pointer.desk,
           abi: DESK_ABI,
           functionName: "publishInbound",
           args: [POLICY_HASH_V2],
         })
-      : await wallet.writeContract({
+      : wallet.writeContract({
           address: pointer.desk,
           abi: DESK_ABI,
           functionName: "settle",
           args: settleArgs(write),
-          gas: 1_500_000n,
-        });
+        }),
+  );
 
   const receipt = await client.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success") {
@@ -296,12 +297,15 @@ export async function rearmClip(): Promise<ClipRoomState> {
     transport: http(RPC),
   });
 
-  const hash = await wallet.writeContract({
-    address: factory,
-    abi: FACTORY_ABI,
-    functionName: "rearm",
-    value: await rearmValue(client, factory, account.address),
-  });
+  const value = await rearmValue(client, factory, account.address);
+  const hash = await withFaucet(client, account.address, () =>
+    wallet.writeContract({
+      address: factory,
+      abi: FACTORY_ABI,
+      functionName: "rearm",
+      ...(value > 0n ? { value } : {}),
+    }),
+  );
   const receipt = await client.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success") {
     const current = await readClipState();
@@ -309,6 +313,31 @@ export async function rearmClip(): Promise<ClipRoomState> {
   }
 
   return readClipState();
+}
+
+/** If settle/rearm cannot pay gas, ask Coinbase's Base Sepolia faucet, then retry once. */
+async function withFaucet<T>(
+  client: ReturnType<typeof publicClient>,
+  clerk: `0x${string}`,
+  write: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await write();
+  } catch (error) {
+    const need = parseHaveWant(error);
+    if (!need) {
+      throw error;
+    }
+    const top = await topUpClerk({ address: clerk, ...need });
+    if ("hash" in top) {
+      await client.waitForTransactionReceipt({ hash: top.hash });
+      return write();
+    }
+    if ("error" in top) {
+      throw new Error(top.error);
+    }
+    throw error;
+  }
 }
 
 /** Stock the factory tank when the clerk can spare it; rearm() then tops the clerk to CLIP_STIPEND. */

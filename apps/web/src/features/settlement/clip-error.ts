@@ -17,16 +17,29 @@ export function stipendToSend(opts: { stipend: bigint; clerk: bigint; factory: b
  * Viem dumps a page of request args when the clerk cannot pay gas. The room should name
  * the shortfall, not the library.
  */
-export function formatClipError(error: unknown): string {
+export function parseHaveWant(error: unknown): { have: bigint; want: bigint } | null {
   const text = [
     error instanceof Error ? error.message : String(error),
     extra(error, "shortMessage"),
     extra(error, "details"),
   ].join("\n");
   const match = text.match(/have (\d+) want (\d+)/);
-  if (match?.[1] && match[2]) {
-    return `Clerk needs ${eth(BigInt(match[2]))} ETH (has ${eth(BigInt(match[1]))}).`;
+  if (!match?.[1] || !match[2]) {
+    return null;
   }
+  return { have: BigInt(match[1]), want: BigInt(match[2]) };
+}
+
+export function formatClipError(error: unknown): string {
+  const need = parseHaveWant(error);
+  if (need) {
+    return `Clerk needs ${eth(need.want)} ETH (has ${eth(need.have)}).`;
+  }
+  const text = [
+    error instanceof Error ? error.message : String(error),
+    extra(error, "shortMessage"),
+    extra(error, "details"),
+  ].join("\n");
   const first =
     text
       .split("\n")

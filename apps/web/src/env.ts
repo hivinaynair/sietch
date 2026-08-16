@@ -18,6 +18,9 @@ export const env = createEnv({
     SIETCH_RPC_URL: z.url().optional(),
     SIETCH_LIVE: z.enum(["0", "1"]).optional(),
     SIETCH_FROM_BLOCK: z.string().regex(/^\d+$/).optional(),
+    CDP_API_KEY_ID: z.string().min(1).optional(),
+    CDP_API_KEY_SECRET: z.string().min(1).optional(),
+    CDP_WALLET_SECRET: z.string().min(1).optional(),
   },
   client: {
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1).optional(),
