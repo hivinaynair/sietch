@@ -68,24 +68,30 @@ export function VerdictBand({
         {whatJustHappened(phase)}
       </p>
 
-      <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3 border-border border-t pt-6">
+      {/*
+       * Stacks into an equation on a phone — a wrapped row put "AND" at the end of the first
+       * line, which read as a list of three things rather than one operation on two.
+       */}
+      <div className="mt-7 flex flex-col items-start gap-y-3 border-border border-t pt-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5">
         <Side operand={result.outbound} />
         <span className="font-mono text-[12px] text-muted-foreground">AND</span>
         <Side operand={result.inbound} />
-        <span aria-hidden className="font-mono text-[13px] text-muted-foreground">
-          →
+        <span className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+          <span aria-hidden className="font-mono text-[13px] text-muted-foreground">
+            →
+          </span>
+          <span className={`text-[13.5px] ${TONE[result.tone]}`}>{result.outcome}</span>
+          {result.tx && (
+            <a
+              href={txUrl(result.tx)}
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono text-[11px] text-muted-foreground underline decoration-border underline-offset-4 hover:text-foreground"
+            >
+              {shortHash(result.tx)} ↗
+            </a>
+          )}
         </span>
-        <span className={`text-[13.5px] ${TONE[result.tone]}`}>{result.outcome}</span>
-        {result.tx && (
-          <a
-            href={txUrl(result.tx)}
-            target="_blank"
-            rel="noreferrer"
-            className="font-mono text-[11px] text-muted-foreground underline decoration-border underline-offset-4 hover:text-foreground"
-          >
-            {shortHash(result.tx)} ↗
-          </a>
-        )}
       </div>
 
       {result.footnote && (

@@ -48,6 +48,25 @@ test("publishing v2 marks the refusal superseded without erasing it", () => {
   expect(inbound.policyHash).toBe("0x2a32…9e7b");
 });
 
+test("the matching v1 seals are called out, not left looking like a bug", () => {
+  for (const phase of ["idle", "pending"] as const) {
+    const [outbound, inbound] = receipts(phase);
+    // Both v1 policies are byte-identical and v1 is unsalted, so the seals genuinely match.
+    expect(outbound.policyHash).toBe(inbound.policyHash);
+    expect(outbound.sealNote).toMatch(/identical/i);
+    expect(inbound.sealNote).toMatch(/identical/i);
+  }
+});
+
+test("once inbound v2 is published the seals diverge and the note clears", () => {
+  for (const phase of ["published", "settled"] as const) {
+    const [outbound, inbound] = receipts(phase);
+    expect(outbound.policyHash).not.toBe(inbound.policyHash);
+    expect(outbound.sealNote).toBeNull();
+    expect(inbound.sealNote).toBeNull();
+  }
+});
+
 test("only the beneficiary institution ever republishes", () => {
   for (const phase of PHASES) {
     expect(receipts(phase)[0].policyLabel).toBe("Outbound T-bill policy v1");

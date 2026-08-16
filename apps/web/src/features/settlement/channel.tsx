@@ -49,7 +49,7 @@ export function Channel({ phase, busy }: { phase: Phase; busy: boolean }) {
         {channelNote(phase)}
       </p>
       <p className="mt-1 text-center text-[11px] text-muted-foreground">
-        the chain reads two receipts, never the clauses
+        the chain reads two receipts, one per institution
       </p>
     </div>
   );

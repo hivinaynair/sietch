@@ -11,8 +11,22 @@ const SIDE_LABEL = {
 /** What this institution is doing during the beat. A publish is not a receipt. */
 export type Activity = "issuing" | "publishing" | null;
 
-/** The policy is present and unreadable. Bars, not clauses — the network sees the hash. */
-function SealedPolicy({ label, hash, align }: { label: string; hash: string; align: Align }) {
+/**
+ * The policy is present and not transmitted. Bars, not clauses — the network sees the seal.
+ * `note` fires while both sides show the same seal, so a reader who spots the collision gets
+ * the reason from us rather than filing it as a bug.
+ */
+function SealedPolicy({
+  label,
+  hash,
+  note,
+  align,
+}: {
+  label: string;
+  hash: string;
+  note: string | null;
+  align: Align;
+}) {
   return (
     <div
       className={`mt-7 w-full rounded-lg border border-border border-dashed bg-muted/60 px-4 py-3.5 ${
@@ -23,11 +37,13 @@ function SealedPolicy({ label, hash, align }: { label: string; hash: string; ali
         <p className="text-[12.5px]">{label}</p>
         <span className="text-[11px] text-muted-foreground">sealed</span>
       </div>
+      {/* Redaction, not a skeleton — the row above says "sealed" so the bars are not read as loading. */}
       <div
         aria-hidden
         className="mt-3 h-4 overflow-hidden rounded-[2px] bg-[repeating-linear-gradient(90deg,var(--foreground)_0_18px,transparent_18px_25px)] opacity-10"
       />
       <p className="mt-3 font-mono text-[11px] text-muted-foreground">{hash}</p>
+      {note ? <p className="mt-2 text-[11px] text-muted-foreground">{note}</p> : null}
     </div>
   );
 }
@@ -108,7 +124,12 @@ export function InstitutionSlab({
         ) : null}
       </div>
 
-      <SealedPolicy label={receipt.policyLabel} hash={receipt.policyHash} align={align} />
+      <SealedPolicy
+        label={receipt.policyLabel}
+        hash={receipt.policyHash}
+        note={receipt.sealNote}
+        align={align}
+      />
 
       <div className="mt-5">
         <ReceiptChip receipt={receipt} activity={activity} />

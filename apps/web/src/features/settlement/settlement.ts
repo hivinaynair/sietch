@@ -69,6 +69,12 @@ export type Receipt = {
   amount: string;
   policyLabel: string;
   policyHash: string;
+  /**
+   * Set while both sides publish the same seal. Two institutions showing one hash looks like
+   * a rendering bug, and it is worse than that: it is v1 being unsalted over identical
+   * clauses. Named on the slab so the reader gets the arithmetic instead of the suspicion.
+   */
+  sealNote: string | null;
   transferId: string;
   /** null before this institution has issued a receipt for the current instruction. */
   allowed: boolean | null;
@@ -86,6 +92,9 @@ export function receipts(phase: Phase): readonly [Receipt, Receipt] {
   const attempt = settled ? 2 : 1;
   const transferId = settled ? ATTEMPT_2 : ATTEMPT_1;
   const pair = receiptsFor(phase);
+  const sealNote = inboundV2
+    ? null
+    : "same seal both sides — the v1 clauses are identical here, and an unsalted hash of identical clauses matches";
 
   return [
     {
@@ -99,6 +108,7 @@ export function receipts(phase: Phase): readonly [Receipt, Receipt] {
       amount: DELIVERY.amount,
       policyLabel: "Outbound T-bill policy v1",
       policyHash: HASH_V1,
+      sealNote,
       transferId,
       allowed: issued ? true : null,
       proof: issued ? shorten(pair.outbound.proof) : null,
@@ -116,6 +126,7 @@ export function receipts(phase: Phase): readonly [Receipt, Receipt] {
       amount: DELIVERY.amount,
       policyLabel: inboundV2 ? "Inbound T-bill policy v2" : "Inbound T-bill policy v1",
       policyHash: inboundV2 ? HASH_V2 : HASH_V1,
+      sealNote,
       transferId,
       allowed: issued ? settled : null,
       proof: issued ? shorten(pair.inbound.proof) : null,
