@@ -18,8 +18,9 @@ export const RECEIVER_ORG = "0x2222222222222222222222222222222222222222";
 
 export const POLICY_HASH_V1 = "0x3e9abaca0aad9ede81f4474766c846d8539f70688e1c8f521bbe1597874e3dc4";
 export const POLICY_HASH_V2 = "0x2a32391a76c35a36352b711f9152c0d0a340cd686850c8ef25fbb11c71b89e7b";
-export const TRANSFER_ATTEMPT_1 = `0x${"44".repeat(32)}`;
-export const TRANSFER_ATTEMPT_2 = `0x${"45".repeat(32)}`;
+/** One id per settlement attempt, consumed once on chain so a passing pair cannot replay. */
+export const TRANSFER_ATTEMPT_1 = `0x${"44".repeat(32)}` as `0x${string}`;
+export const TRANSFER_ATTEMPT_2 = `0x${"45".repeat(32)}` as `0x${string}`;
 
 export const CHANI_OUTBOUND: Groth16Receipt = {
   allowed: true,

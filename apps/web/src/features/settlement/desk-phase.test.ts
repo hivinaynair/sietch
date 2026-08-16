@@ -45,6 +45,36 @@ test("hash comparison is case-insensitive", () => {
   ).toBe("published");
 });
 
+/**
+ * The window bug: phase used to be read entirely off event logs, scanned from a sliding
+ * `latest - 9000` block window (≈5h on Base). Once a settled desk's events aged out, the room
+ * reported "idle", re-enabled the control, and the next click reverted on chain. Contract
+ * state has no expiry, so state decides the phase and events only supply link targets.
+ */
+test("a settled desk stays settled after its events age out of the window", () => {
+  expect(phaseFromDesk({ inboundHash: POLICY_HASH_V2, attemptTwoUsed: true })).toBe("settled");
+});
+
+test("a published desk stays published without the pending event", () => {
+  expect(phaseFromDesk({ inboundHash: POLICY_HASH_V2 })).toBe("published");
+});
+
+test("a consumed attempt-2 id means settled even if inbound was republished to v1", () => {
+  expect(phaseFromDesk({ inboundHash: POLICY_HASH_V1, attemptTwoUsed: true })).toBe("settled");
+});
+
+test("a fresh desk with no events and v1 in force is idle", () => {
+  expect(phaseFromDesk({ inboundHash: POLICY_HASH_V1, attemptTwoUsed: false })).toBe("idle");
+});
+
+test("the pending beat is the one with no state footprint, so it still needs its event", () => {
+  // settle() that refuses consumes no transferId and moves no hash — only an event marks it.
+  expect(phaseFromDesk({ inboundHash: POLICY_HASH_V1, attemptTwoUsed: false })).toBe("idle");
+  expect(
+    phaseFromDesk({ inboundHash: POLICY_HASH_V1, attemptTwoUsed: false, settlePendingTx: PENDING }),
+  ).toBe("pending");
+});
+
 test("the next write follows the clip and stops when settled", () => {
   expect(nextWrite("idle")).toBe("settle-v1");
   expect(nextWrite("pending")).toBe("publish");

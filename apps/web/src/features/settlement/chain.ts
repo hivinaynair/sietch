@@ -11,6 +11,13 @@ export const CLIP_TX = {
   settleForPaul: "0xcf3117aa581fef8ba296cd26019ad62bff2f4b058516afc1581f7c537f928c27",
 } as const;
 
+/**
+ * Block the live desk was deployed in. Anchors the event scan so the transcript cannot empty
+ * itself as the clip's transactions fall behind a sliding window. `bun run rearm` rewrites it;
+ * null means scan from genesis, which is slow but never silently wrong.
+ */
+export const DEPLOY_BLOCK: number | null = null;
+
 export const DEPLOY_TX = {
   tbill: "0x1739beedf0cd9a1cb5a08b4e82e6f09fd46c3478d97bfc615ebe16c68753e90d",
   desk: "0x4e2c8646e9afc86a9aa11dc5c859f9894857f0bfe4fde0134a350d2f1d74e78f",

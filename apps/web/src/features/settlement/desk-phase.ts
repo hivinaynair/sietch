@@ -5,6 +5,11 @@ export type DeskWrite = "settle-v1" | "publish" | "settle-v2";
 
 export type DeskFacts = {
   inboundHash: `0x${string}` | string;
+  /**
+   * `usedTransfer[TRANSFER_ATTEMPT_2]`. Contract state, so unlike an event it never ages out
+   * of a log window — this is what keeps a spent desk from reading back as fresh.
+   */
+  attemptTwoUsed?: boolean;
   settlePendingTx?: `0x${string}` | string;
   publishTx?: `0x${string}` | string;
   settleForPaulTx?: `0x${string}` | string;
@@ -20,12 +25,22 @@ function norm(hash: string): string {
   return hash.toLowerCase();
 }
 
-/** What the desk has already done. The room does not invent a phase the chain has not reached. */
+/**
+ * What the desk has already done. The room does not invent a phase the chain has not reached.
+ *
+ * **State first, events second.** A consumed attempt-2 transfer id and the stored inbound hash
+ * are contract state with no expiry; event logs are only readable inside whatever block window
+ * the RPC was asked for. Deriving the phase from events alone meant a settled desk reported
+ * "idle" once its logs fell outside the window, re-armed the control, and reverted on click.
+ *
+ * Only the refuse has no state footprint — it consumes no transfer id and moves no hash — so
+ * `pending` is the single beat that still depends on its event being in range.
+ */
 export function phaseFromDesk(facts: DeskFacts): Phase {
-  if (facts.settleForPaulTx) {
+  if (facts.attemptTwoUsed || facts.settleForPaulTx) {
     return "settled";
   }
-  if (facts.settlePendingTx && norm(facts.inboundHash) === norm(POLICY_HASH_V2)) {
+  if (norm(facts.inboundHash) === norm(POLICY_HASH_V2)) {
     return "published";
   }
   if (facts.settlePendingTx) {

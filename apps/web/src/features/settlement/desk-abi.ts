@@ -33,6 +33,14 @@ export const DESK_ABI = [
     outputs: [{ type: "address" }],
   },
   {
+    // Read rather than inferred from logs: state does not age out of a block window.
+    type: "function",
+    name: "usedTransfer",
+    stateMutability: "view",
+    inputs: [{ name: "transferId", type: "bytes32" }],
+    outputs: [{ type: "bool" }],
+  },
+  {
     type: "event",
     name: "InboundPolicyPublished",
     inputs: [{ name: "policyHash", type: "bytes32", indexed: false }],

@@ -3,8 +3,9 @@ import { join } from "node:path";
 import { createPublicClient, createWalletClient, type Hex, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
+import { DEPLOY_BLOCK } from "./chain";
 import type { Phase } from "./clip";
-import { POLICY_HASH_V2, RECEIVER_ORG } from "./clip-artifacts";
+import { POLICY_HASH_V2, RECEIVER_ORG, TRANSFER_ATTEMPT_2 } from "./clip-artifacts";
 import { DESK_ABI, TBILL_ABI } from "./desk-abi";
 import {
   type ClipTxes,
@@ -49,6 +50,22 @@ export function isLive(): boolean {
   return Boolean(clerkKey() && deskAddress() && process.env.SIETCH_LIVE !== "0");
 }
 
+/**
+ * Where to start scanning for the clip's events.
+ *
+ * Never a window relative to head. A sliding `latest - 9000` meant the transcript quietly
+ * emptied about five hours after the clip ran. `SIETCH_FROM_BLOCK` wins; otherwise the desk's
+ * deploy block from `artifacts/demo/chain.json`, which `bun run rearm` keeps current; failing
+ * both, genesis — slower, but never wrong.
+ */
+function deskFromBlock(): bigint {
+  const configured = process.env.SIETCH_FROM_BLOCK;
+  if (configured) {
+    return BigInt(configured);
+  }
+  return DEPLOY_BLOCK ? BigInt(DEPLOY_BLOCK) : 0n;
+}
+
 function publicClient() {
   return createPublicClient({ chain: baseSepolia, transport: http(RPC) });
 }
@@ -82,7 +99,7 @@ async function readFacts(
     abi: DESK_ABI,
     functionName: "tbill",
   });
-  const [deskShares, paulShares] = await Promise.all([
+  const [deskShares, paulShares, attemptTwoUsed] = await Promise.all([
     client.readContract({
       address: tbill,
       abi: TBILL_ABI,
@@ -95,11 +112,15 @@ async function readFacts(
       functionName: "balanceOf",
       args: [RECEIVER_ORG],
     }),
+    client.readContract({
+      address: desk,
+      abi: DESK_ABI,
+      functionName: "usedTransfer",
+      args: [TRANSFER_ATTEMPT_2],
+    }),
   ]);
 
-  const latest = await client.getBlockNumber();
-  const configured = process.env.SIETCH_FROM_BLOCK;
-  const fromBlock = configured ? BigInt(configured) : latest > 9000n ? latest - 9000n : 0n;
+  const fromBlock = deskFromBlock();
 
   const pending = await client.getContractEvents({
     address: desk,
@@ -122,6 +143,7 @@ async function readFacts(
 
   return {
     inboundHash,
+    attemptTwoUsed,
     settlePendingTx: pending[0]?.transactionHash,
     publishTx: published[0]?.transactionHash,
     settleForPaulTx: settled[0]?.transactionHash,
