@@ -5,6 +5,7 @@
  * Policy clauses are never modelled, only their hashes. See
  * docs/plans/2026-08-15-sietch-design.md §4 (threat model) and §8 (guest I/O).
  */
+import { CLIP_TX } from "./chain";
 import type { Phase } from "./clip";
 import {
   PROGRAM_VKEY as ARTIFACT_VKEY,
@@ -30,10 +31,6 @@ export const VERIFIER_GATEWAY = "0x397A5f7f3dBd538f23DE225B51f532c34448dA9B";
 /** Live desk from artifacts/demo/chain.json. Share posts to 0x2222…, not a customer wallet. */
 export const DESK = "0xF94822401F3DdEC9e53c4143A4eFEdF61488dFA7";
 export const TBILL = "0x66DD7896EAec4Bf7Dc41f3Ad259F6b69e36e7984";
-
-const SETTLE_PENDING = "0xc445…8198";
-const PUBLISH_V2 = "0xfe31…417f";
-const SETTLE_FOR_PAUL = "0xcf31…8c27";
 
 /** Cycle count of one execute. Tiny on purpose — this is a policy check, not a workload. */
 export const EXECUTE_CYCLES = 25_521;
@@ -162,7 +159,10 @@ export type Entry = {
   at: string;
   who: string;
   what: string;
+  /** Proof fingerprint. Display only — a receipt is not a transaction. */
   hash?: string;
+  /** Full Base Sepolia transaction hash, for readers who want to open it. */
+  tx?: string;
   tone?: Exclude<VerdictTone, "idle">;
 };
 
@@ -192,7 +192,7 @@ export function history(phase: Phase): readonly Entry[] {
       at: "00:02",
       who: "Desk",
       what: "settle() · no transfer · settlement pending beneficiary policy",
-      hash: SETTLE_PENDING,
+      tx: CLIP_TX.settlePending,
       tone: "held",
     },
   ];
@@ -207,7 +207,7 @@ export function history(phase: Phase): readonly Entry[] {
       at: "01:10",
       who: "Paul’s institution",
       what: "Published inbound T-bill policy v2",
-      hash: PUBLISH_V2,
+      tx: CLIP_TX.publishInboundV2,
     },
   ];
 
@@ -234,7 +234,7 @@ export function history(phase: Phase): readonly Entry[] {
       at: "01:16",
       who: "Desk",
       what: "settle() · 1 share posted for Paul",
-      hash: SETTLE_FOR_PAUL,
+      tx: CLIP_TX.settleForPaul,
       tone: "settled",
     },
   ];

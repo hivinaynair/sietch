@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { CLIP_TX } from "./chain";
 import { forbiddenCopy, type Phase } from "./clip";
 import { channelNote, history, receipts, verdict } from "./settlement";
 
@@ -70,9 +71,11 @@ test("history is append-only across the clip", () => {
   expect(published.slice(0, pending.length)).toEqual([...pending]);
   expect(settled.slice(0, published.length)).toEqual([...published]);
   expect(settled.at(-1)?.what).toContain("posted for Paul");
-  expect(pending.find((e) => e.what.startsWith("settle()"))?.hash).toBe("0xc445…8198");
-  expect(published.find((e) => e.what.includes("Published inbound"))?.hash).toBe("0xfe31…417f");
-  expect(settled.at(-1)?.hash).toBe("0xcf31…8c27");
+  expect(pending.find((e) => e.what.startsWith("settle()"))?.tx).toBe(CLIP_TX.settlePending);
+  expect(published.find((e) => e.what.includes("Published inbound"))?.tx).toBe(
+    CLIP_TX.publishInboundV2,
+  );
+  expect(settled.at(-1)?.tx).toBe(CLIP_TX.settleForPaul);
 });
 
 test("the refusal stays on the tape after v2 is published", () => {

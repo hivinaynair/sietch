@@ -1,3 +1,4 @@
+import { shortHash, txUrl } from "./chain";
 import type { Entry } from "./settlement";
 
 const TONE = {
@@ -5,7 +6,11 @@ const TONE = {
   settled: "text-success",
 } as const;
 
-/** Append-only tape of what the chain saw. Publishing v2 never rewrites a refusal. */
+/**
+ * Append-only tape of what the chain saw. Publishing v2 never rewrites a refusal.
+ * Transactions are links: the clip claims Base Sepolia, so a reader should be able to
+ * leave the page and check it.
+ */
 export function Transcript({ entries }: { entries: readonly Entry[] }) {
   return (
     <section>
@@ -29,8 +34,19 @@ export function Transcript({ entries }: { entries: readonly Entry[] }) {
               <span className={`col-start-2 sm:col-start-3 ${entry.tone ? TONE[entry.tone] : ""}`}>
                 {entry.what}
               </span>
-              <span className="col-start-2 font-mono text-[11px] text-muted-foreground sm:col-start-4">
-                {entry.hash ?? ""}
+              <span className="col-start-2 font-mono text-[11px] sm:col-start-4">
+                {entry.tx ? (
+                  <a
+                    href={txUrl(entry.tx)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-muted-foreground underline decoration-border underline-offset-4 hover:text-foreground"
+                  >
+                    {shortHash(entry.tx)} ↗
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground">{entry.hash ?? ""}</span>
+                )}
               </span>
             </li>
           ))}
