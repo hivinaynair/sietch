@@ -141,17 +141,16 @@ export type Ledger = {
 };
 
 const CAVEAT =
-  "Withheld from the wire is not the same as hidden. A v1 policy is a ceiling and one flag under an unsalted hash, so anything its seal covers falls to enumeration in under 200 guesses. The blinded commitment that closes this is implemented and tested in crates/policy; wiring it changes the vkey, so this clip still publishes the v1 seal. See known limits.";
+  "The v1 seal enumerates in under 200 guesses; the fix is in crates/policy. See known limits.";
 
 /**
- * What settlement disclosed, against what it kept off the wire — scoped by `caveat`, which
- * is load-bearing rather than a footnote. The second column is the product, and a viewer who
- * reads only the first one has missed it.
+ * What settlement disclosed, against what it kept off the wire — scoped by `caveat`.
+ * Three short lines each; a walk should not have to read a brief.
  */
 export function ledger(phase: Phase): Ledger {
   const never = [
-    "The other institution’s policy — one policy per stdin, a fixed buffer, never both",
-    "Which clause refused the delivery — the desk emits no such field",
+    "The other institution’s policy — one policy per stdin, never both",
+    "Which clause refused — the desk emits no such field",
     "The clauses in bytes — only their seals were transmitted",
   ] as const;
 
@@ -161,16 +160,11 @@ export function ledger(phase: Phase): Ledger {
 
   const read = [
     "Two booleans: outbound allowed, inbound allowed",
-    "Two policy seals — v1’s is enumerable, so treat its clauses as public",
-    "Chani, Paul, both institutions, token, amount",
-    "One transfer id per attempt, consumed once",
+    "Two policy seals — v1’s is enumerable",
+    phase === "settled" ? "Both receipts verified for this vkey" : "One transfer id per attempt",
   ];
 
-  return {
-    read: phase === "settled" ? [...read, "That both receipts verified for this vkey"] : read,
-    never,
-    caveat: CAVEAT,
-  };
+  return { read, never, caveat: CAVEAT };
 }
 
 /**

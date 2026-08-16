@@ -1,18 +1,14 @@
 export type Limit = {
   id: string;
   title: string;
-  /** What this clip actually does. Never softened — the reader can check all four. */
+  /** What this clip actually does. */
   what: string;
-  /** What a real desk does instead, specifically enough to be argued with. */
+  /** What a real desk does instead. */
   real: string;
 };
 
 /**
  * What this clip stubs, on the page rather than only in the repo.
- *
- * The reader who opens the URL and not the repo is the reader most likely to take the strong
- * claims at face value, so the stubs belong where the claims are. Each row is one thing a
- * careful reader would find anyway; finding it here first is the point.
  *
  * Kept in sync with the "Known limits" section of README.md by known-limits.test.ts.
  */
@@ -20,32 +16,31 @@ export const LIMITS: readonly Limit[] = [
   {
     id: "seal",
     title: "The v1 seal is enumerable",
-    what: "A policy is a u64 ceiling and one flag, hashed with no blinding factor. Under 200 guesses recover it from the seal the desk stores, so v1 hides the clauses from a casual reader and not from an interested one.",
-    real: "Commit to blinding ‖ clauses, with the blinding factor carried in stdin next to the policy. Implemented and tested as policy_commitment in crates/policy, including the sweep that breaks v1 and the same sweep failing against the commitment. Wiring it changes the guest ELF and therefore the vkey, which would invalidate the four committed receipts.",
+    what: "Unsalted hash; under 200 guesses recover the clauses.",
+    real: "policy_commitment in crates/policy; wiring it changes the vkey.",
   },
   {
     id: "token",
     title: "The receipts name a demo token id",
-    what: "Both receipts commit token 0x3333…3333. The desk moves a separately deployed sTBILL and checks the committed id against that constant, so the proof is not bound to the asset that actually moves.",
-    real: "Deploy the token first, prove against its address, then deploy the desk. Ordering only — the guest already takes the token as a public input, so nothing about the design changes.",
+    what: "Both receipts commit 0x3333…; the proof is not bound to the asset that moves.",
+    real: "Deploy the token first, then prove against its address.",
   },
   {
     id: "keys",
     title: "One operator key stands in for two institutions",
-    what: "The institutions are 0x1111… and 0x2222…, which nobody holds, and a single demo clerk signs both settle() and publishInbound(). Two receipts were generated on one machine.",
-    real: "Each institution proves locally and signs its own publish. The isolation this clip does enforce is stdin discipline: one policy per execute, a fixed 146-byte buffer, and a decode error if a caller ever concatenates two policies — see STDIN_LEN in crates/policy-guest.",
+    what: "One clerk signs both calls; two receipts, one machine.",
+    real: "Stdin is 146 bytes; a decode error if two policies are concatenated.",
   },
   {
     id: "proving",
     title: "Proving is precomputed, verification is live",
-    what: "Four Groth16 receipts were generated ahead of time. The control on this page runs settle() and publishInbound() against Base Sepolia now; it does not prove anything in your browser.",
-    real: "Instant means verify at settlement — two verifyProof calls, roughly 540k gas plus the transfer. That number is the argument for a native verifier in the chain rather than a contract above it; the README says what it would take to reach the throughput Metal is aiming at.",
+    what: "Four receipts were generated ahead of time; this page does not prove.",
+    real: "Instant means two verifyProof calls, roughly 540k gas.",
   },
 ] as const;
 
 /**
- * Same visual language as the privacy ledger — this is the third column of the same claim,
- * not an apology appended to it.
+ * Same visual language as the privacy ledger — a dashed panel, four short rows.
  */
 export function KnownLimits() {
   return (
@@ -56,25 +51,15 @@ export function KnownLimits() {
       <h2 className="text-[11px] text-muted-foreground uppercase tracking-[0.14em]">
         known limits
       </h2>
-      <p className="mt-3 max-w-3xl text-[12.5px] text-muted-foreground">
-        Four things this clip stubs. A production desk closes all four; none of them are hidden
-        behind a hand-wave here.
-      </p>
 
-      <ul className="mt-6 space-y-6">
+      <ul className="mt-4 space-y-3">
         {LIMITS.map((limit) => (
-          <li key={limit.id} className="border-border border-t pt-5 first:border-t-0 first:pt-0">
-            <p className="text-[13.5px]">{limit.title}</p>
-            <div className="mt-2.5 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
-              <p className="max-w-prose text-[12.5px] text-muted-foreground">
-                <span className="text-foreground">in this clip · </span>
-                {limit.what}
-              </p>
-              <p className="max-w-prose text-[12.5px] text-muted-foreground">
-                <span className="text-foreground">in a real deployment · </span>
-                {limit.real}
-              </p>
-            </div>
+          <li key={limit.id} className="text-[12.5px]">
+            <span className="text-foreground">{limit.title}</span>
+            <span className="text-muted-foreground">
+              {" — "}
+              {limit.what} {limit.real}
+            </span>
           </li>
         ))}
       </ul>

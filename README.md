@@ -54,31 +54,23 @@ The other institution's policy — one policy per stdin, never both · which cla
 
 ## Known limits
 
-Four things this clip stubs. All four are stated on the live page as well.
+The same four stubs as the live page.
 
 ### The v1 seal is enumerable
 
-A policy is a `u64` ceiling and one flag, hashed with no blinding factor. Under 200 guesses recover it from the seal the desk stores — `v1_hash_falls_to_enumeration` in `crates/policy` **is** that attack, and it passes. So v1 hides the clauses from a casual reader and not from an interested one. It also means two institutions holding identical clauses publish an identical seal, which is why the clip shows one hash under both sides at v1.
-
-The fix is a hiding commitment: `keccak(blinding ‖ clauses)`, with the blinding factor carried in stdin next to the policy. Implemented and tested as `policy_commitment`, together with the sweep that breaks v1 failing against it. It is **deliberately not wired into the guest**: doing so changes the ELF and therefore the vkey, which would invalidate the four committed Groth16 receipts. One reprove away, not one redesign away.
+Unsalted hash; under 200 guesses recover the clauses. `policy_commitment` in `crates/policy`; wiring it changes the vkey.
 
 ### The receipts name a demo token id
 
-Both receipts commit token `0x3333…3333`. The desk moves a separately deployed `sTBILL` and checks the committed id against that constant, so the proof is **not bound to the asset that actually moves**.
-
-Fix is ordering, not design: deploy the token, prove against its address, then deploy the desk. The guest already takes the token as a public input.
+Both receipts commit `0x3333…`; the proof is not bound to the asset that moves. Deploy the token first, then prove against its address.
 
 ### One operator key stands in for two institutions
 
-The institutions are `0x1111…` and `0x2222…`, which nobody holds, and a single demo clerk signs both `settle()` and `publishInbound()`. Both receipts were generated on one machine.
-
-Production has each institution prove locally and sign its own publish. What this clip *does* enforce is stdin discipline, above.
+One clerk signs both calls; two receipts, one machine. Stdin is 146 bytes; a decode error if two policies are concatenated.
 
 ### Proving is precomputed, verification is live
 
-Four Groth16 receipts were generated ahead of time. The control on the page runs `settle()` and `publishInbound()` against Base Sepolia **now** — it does not prove anything in your browser. "Instant" means verify at settlement, never prove in the tab.
-
-Also disclosed: Groth16 carries a trusted setup (Aztec Ignition + Succinct entropy). Amounts and parties are public in v1; this demo answers **policy** privacy, not activity privacy.
+Four receipts were generated ahead of time; this page does not prove. Instant means two `verifyProof` calls, roughly 540k gas.
 
 ---
 

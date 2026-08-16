@@ -207,7 +207,7 @@ export function SettlementRoom() {
               onAdvance={() => void run()}
             />
 
-            {error ? (
+            {error && !(phase === "settled" && error === "already settled") ? (
               <p className="mt-4 text-[13px] text-destructive" aria-live="polite">
                 {error}
               </p>

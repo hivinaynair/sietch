@@ -6,12 +6,13 @@ test("the four known stubs are all present", () => {
   expect(LIMITS.map((limit) => limit.id)).toEqual(["seal", "token", "keys", "proving"]);
 });
 
-test("every limit says what this clip does and what a real desk does instead", () => {
+test("every limit is a short claim, not an essay", () => {
   for (const limit of LIMITS) {
     expect(limit.title.length).toBeGreaterThan(10);
-    // Long enough to be a claim a reader can argue with, not a one-word hedge.
-    expect(limit.what.length).toBeGreaterThan(80);
-    expect(limit.real.length).toBeGreaterThan(80);
+    expect(limit.what.length).toBeGreaterThan(20);
+    expect(limit.what.length).toBeLessThan(140);
+    expect(limit.real.length).toBeGreaterThan(20);
+    expect(limit.real.length).toBeLessThan(140);
   }
 });
 
