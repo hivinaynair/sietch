@@ -122,7 +122,7 @@ export function whatJustHappened(phase: Phase): string {
     case "pending":
       return "Chani instructed. Her institution issued an allow, Paul’s issued a refusal, and settle() moved nothing.";
     case "published":
-      return "Paul’s institution published inbound v2. The refusal stays on the tape — publishing a version never rewrites it.";
+      return "Paul’s institution published inbound v2. The refusal stays on the transcript — publishing a version never rewrites it.";
     case "settled":
       return "Chani instructed the same delivery. Both institutions issued an allow against a new transfer id, and the share posted for Paul.";
   }

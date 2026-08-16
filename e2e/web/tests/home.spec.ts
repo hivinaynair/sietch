@@ -30,41 +30,23 @@ test("the clip reads as three beats, and an unplayed beat is not written as done
   await expect(spine.getByText("instruct the delivery")).toBeVisible();
   await expect(spine.getByText("publish inbound v2")).toBeVisible();
   await expect(spine.getByText("inbound v2 published")).toHaveCount(0);
-
-  await page.getByRole("button", { name: "Chani instructs the delivery" }).click();
-  await expect(spine.getByText("refused")).toBeVisible();
-
-  await page.getByRole("button", { name: "Paul’s institution publishes inbound v2" }).click();
-  await expect(spine.getByText("inbound v2 published")).toBeVisible();
+  await expect(spine.getByText("refused")).toHaveCount(0);
 });
 
-test("one control walks the room: refused, v2 published, same delivery settles", async ({
+test("this instance does not play a recording — the control waits for a live desk", async ({
   page,
 }) => {
   await page.goto("/");
-  const band = page.getByRole("region", { name: "settlement" });
 
-  await page.getByRole("button", { name: "Chani instructs the delivery" }).click();
-  await expect(band.getByText("no transfer · settlement pending beneficiary policy")).toBeVisible();
-
-  await page.getByRole("button", { name: "Paul’s institution publishes inbound v2" }).click();
-  await expect(page.getByText("beneficiary door open · inbound v2")).toBeVisible();
-
-  // Publishing a version is not a settlement: the pair on chain is still attempt 1.
-  await expect(band.getByText("no transfer · the pair on chain is still attempt 1")).toBeVisible();
-
-  await page.getByRole("button", { name: "Chani instructs the same delivery" }).click();
-  await expect(band.getByText("1 share posted for Paul")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Settled for Paul" })).toBeDisabled();
-
-  // The refusal stays on the tape after v2.
-  await expect(page.getByText("Receipt · side inbound · allowed false")).toBeVisible();
+  await expect(page.getByText("· tape")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Reset" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Chani instructs the delivery" })).toBeDisabled();
+  await expect(page.getByText("This instance is not connected to a live desk.")).toBeVisible();
 });
 
 test("settlement is shown as the AND of two receipts, not asserted in prose", async ({ page }) => {
   await page.goto("/");
   const band = page.getByRole("region", { name: "settlement" });
-  await page.getByRole("button", { name: "Chani instructs the delivery" }).click();
 
   await expect(band.getByText("outbound", { exact: true })).toBeVisible();
   await expect(band.getByText("inbound", { exact: true })).toBeVisible();
@@ -73,38 +55,19 @@ test("settlement is shown as the AND of two receipts, not asserted in prose", as
   await expect(band.getByText("Paul’s institution", { exact: true })).toBeVisible();
 });
 
-test("every transaction the room shows can be opened on Base Sepolia", async ({ page }) => {
+test("the known limits are on the page", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Chani instructs the delivery" }).click();
-
-  const links = page.locator('a[href^="https://sepolia.basescan.org/tx/"]');
-  await expect(links.first()).toBeVisible();
-
-  for (const href of await links.evaluateAll((all) =>
-    all.map((a) => a.getAttribute("href") ?? ""),
-  )) {
-    expect(href).toMatch(/^https:\/\/sepolia\.basescan\.org\/tx\/0x[0-9a-f]{64}$/);
-  }
+  const limits = page.getByRole("region", { name: "known limits" });
+  await expect(limits.getByText("The v1 seal is enumerable")).toBeVisible();
+  await expect(limits.getByText("The receipts name a demo token id")).toBeVisible();
 });
 
-test("the room announces the beat once, not five times at once", async ({ page }) => {
+test("the room announces the idle beat once", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Chani instructs the delivery" }).click();
 
   const status = page.getByRole("status");
   await expect(status).toHaveCount(1);
-  await expect(status).toHaveText(/Outbound allowed, inbound refused/);
-});
-
-test("Reset returns the room to nothing instructed", async ({ page }) => {
-  await page.goto("/");
-
-  await page.getByRole("button", { name: "Chani instructs the delivery" }).click();
-  await expect(page.getByText("Receipt · side outbound · allowed true")).toBeVisible();
-
-  await page.getByRole("button", { name: "Reset" }).click();
-  await expect(page.getByText("Nothing on chain yet. Chani has not instructed.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Chani instructs the delivery" })).toBeEnabled();
+  await expect(status).toHaveText("Nothing instructed. No receipts yet.");
 });
 
 test("MSW stubs an external API in the browser", async ({ page }) => {

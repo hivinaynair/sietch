@@ -1,12 +1,19 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { advanceClip, isLive } from "@/features/settlement/desk-live";
+import { advanceLimit } from "@/features/settlement/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   if (!isLive()) {
-    return NextResponse.json({ live: false, error: "tape" }, { status: 503 });
+    return NextResponse.json({ live: false, error: "not live" }, { status: 503 });
+  }
+
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const limited = advanceLimit.check(ip);
+  if (!limited.ok) {
+    return NextResponse.json({ live: true, error: limited.error }, { status: 429 });
   }
 
   try {

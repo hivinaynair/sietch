@@ -184,7 +184,7 @@ export async function advanceClip(): Promise<ClipRoomState> {
       deskShares: 1,
       paulShares: 0,
       txs: {},
-      error: "tape",
+      error: "not live",
     };
   }
 

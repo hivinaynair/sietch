@@ -12,7 +12,7 @@ The click spends. Same as Bare Metal moving USDC — except the asset is the T-b
 - Phase is derived from the desk: pending event, inbound hash, `SettledForPaul`.
 - POST `/api/clip/advance` broadcasts the next write with the clerk key. The tab waits for the receipt.
 - GET `/api/clip/state` returns phase, live tx hashes, Paul’s books.
-- No clerk key → tape (e2e, local without secrets). `SIETCH_LIVE=0` forces tape.
+- No clerk key → idle, control disarmed. `SIETCH_LIVE=0` forces that (e2e).
 - Reset does not rewind the chain. Live: Refresh. One walk per desk.
 
 ## Fresh desk

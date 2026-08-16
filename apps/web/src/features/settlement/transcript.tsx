@@ -7,7 +7,7 @@ const TONE = {
 } as const;
 
 /**
- * Append-only tape of what the chain saw. Publishing v2 never rewrites a refusal.
+ * Append-only log of what the chain saw. Publishing v2 never rewrites a refusal.
  * Transactions are links: the clip claims Base Sepolia, so a reader should be able to
  * leave the page and check it.
  */

@@ -104,7 +104,7 @@ The live page drives a real desk. State lives on chain, so the clip is shared: w
 
 - **Phase is derived from contract state** (`usedTransfer`, `policyHashOf`), not from a sliding event window, so a settled desk cannot read back as fresh.
 - **Set `SIETCH_FROM_BLOCK`** to the desk's deploy block. Without it the event scan falls back to the deploy block recorded in `artifacts/demo/chain.json`.
-- **Tape fallback.** When the live desk has settled, the room replays the recorded clip and says so in the header (`· tape`), linking the historical transactions. The story is always tellable.
+- **A spent desk stays spent.** There is no recorded replay. Re-arm to walk it again.
 - **Re-arm** with `bun run rearm`: deploys a fresh `Desk` against the existing `sTBILL`, mints the share, rewrites `chain.json`, and prints the `vercel env` commands to run. The receipts bind vkey, orgs, token id, policy seals and transfer ids — **not** the desk address — so a new desk restores the clip without reproving.
 
 ## Reproducing the proofs

@@ -8,7 +8,7 @@ export type Books = {
   paulShares: number;
 };
 
-/** Tape follows the clip. Live passes the balances just read from the token. */
+/** Chain balances when they have been read; otherwise the idle 1 / 0 books. */
 export function booksFor(phase: Phase, live?: Books): Books {
   if (live) {
     return live;

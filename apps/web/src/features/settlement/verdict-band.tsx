@@ -45,11 +45,14 @@ function Side({ operand }: { operand: Operand }) {
 export function VerdictBand({
   phase,
   busy,
+  armed = true,
   txs,
   onAdvance,
 }: {
   phase: Phase;
   busy: boolean;
+  /** False when this instance cannot submit to the desk. */
+  armed?: boolean;
   txs?: ClipTxes;
   onAdvance: () => void;
 }) {
@@ -101,7 +104,7 @@ export function VerdictBand({
       <div className="mt-7 flex flex-wrap items-center gap-5 border-border border-t pt-6">
         <button
           type="button"
-          disabled={!move || busy}
+          disabled={!move || busy || !armed}
           onClick={onAdvance}
           className="h-11 rounded-full bg-foreground px-6 text-[13.5px] text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
         >

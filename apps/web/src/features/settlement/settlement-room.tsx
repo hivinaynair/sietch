@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { BeatSpine } from "./beat-spine";
 import { booksFor } from "./books";
-import { addressUrl, CLIP_TX } from "./chain";
+import { addressUrl } from "./chain";
 import { Channel } from "./channel";
-import { type Action, advance, availableAction, createClip, nextMove } from "./clip";
+import { type Action, availableAction, nextMove } from "./clip";
 import type { ClipTxes } from "./desk-phase";
 import { type Activity, InstitutionSlab } from "./institution-slab";
 import { KnownLimits } from "./known-limits";
@@ -14,9 +14,6 @@ import { PrivacyLedger } from "./privacy-ledger";
 import { DELIVERY, DESK, history, NETWORK, PROGRAM_VKEY, receipts } from "./settlement";
 import { Transcript } from "./transcript";
 import { VerdictBand } from "./verdict-band";
-
-/** Tape only. Live waits on the receipt instead of a timer. */
-const TAPE_BEAT_MS = 650;
 
 type RoomState = {
   live: boolean;
@@ -27,20 +24,6 @@ type RoomState = {
   paulShares: number;
   error?: string;
 };
-
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-
-  useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(query.matches);
-    const onChange = (event: MediaQueryListEvent) => setReduced(event.matches);
-    query.addEventListener("change", onChange);
-    return () => query.removeEventListener("change", onChange);
-  }, []);
-
-  return reduced;
-}
 
 function activityFor(action: Action | null): { outbound: Activity; inbound: Activity } {
   if (action === "instruct") {
@@ -67,17 +50,15 @@ async function fetchState(): Promise<RoomState> {
 }
 
 export function SettlementRoom() {
-  const [clip, setClip] = useState(createClip);
   const [live, setLive] = useState<RoomState | null>(null);
   const [inFlight, setInFlight] = useState<Action | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const reduced = usePrefersReducedMotion();
 
   useEffect(() => {
     void fetchState()
       .then((state) => {
         setLive(state);
-        if (state.error && state.live) {
+        if (state.error) {
           setError(state.error);
         }
       })
@@ -86,69 +67,54 @@ export function SettlementRoom() {
           live: false,
           phase: "idle",
           desk: DESK,
-          txs: CLIP_TX,
+          txs: {},
           deskShares: 1,
           paulShares: 0,
         });
+        setError("desk unread");
       });
   }, []);
 
-  useEffect(() => {
-    if (!inFlight || live?.live) {
-      return;
-    }
-    const timer = window.setTimeout(() => setInFlight(null), TAPE_BEAT_MS);
-    return () => window.clearTimeout(timer);
-  }, [inFlight, live?.live]);
-
-  const phase = live?.live ? live.phase : clip.phase;
-  const txs = live?.live ? live.txs : CLIP_TX;
+  const phase = live?.phase ?? "idle";
+  const txs = live?.txs ?? {};
   const desk = live?.desk ?? DESK;
+  const armed = Boolean(live?.live);
 
   const run = useCallback(async () => {
+    if (!armed) {
+      return;
+    }
     const taken = availableAction({ phase });
-    if (live?.live) {
-      setInFlight(taken);
-      setError(null);
-      const res = await fetch("/api/clip/advance", { method: "POST" }).catch(() => undefined);
-      const body = (await res?.json().catch(() => undefined)) as Partial<RoomState> | undefined;
-      if (!res?.ok || !body) {
-        setError(body?.error ?? "settle() did not land");
-        setInFlight(null);
-        return;
-      }
-      setLive({
-        live: true,
-        phase: body.phase ?? phase,
-        desk: body.desk ?? desk,
-        txs: body.txs ?? txs,
-        deskShares: body.deskShares ?? 0,
-        paulShares: body.paulShares ?? 0,
-      });
+    setInFlight(taken);
+    setError(null);
+    const res = await fetch("/api/clip/advance", { method: "POST" }).catch(() => undefined);
+    const body = (await res?.json().catch(() => undefined)) as Partial<RoomState> | undefined;
+    if (!res?.ok || !body) {
+      setError(body?.error ?? "settle() did not land");
       setInFlight(null);
       return;
     }
+    setLive({
+      live: true,
+      phase: body.phase ?? phase,
+      desk: body.desk ?? desk,
+      txs: body.txs ?? txs,
+      deskShares: body.deskShares ?? 0,
+      paulShares: body.paulShares ?? 0,
+    });
+    setInFlight(null);
+  }, [armed, desk, phase, txs]);
 
-    setClip(advance);
-    if (!reduced) {
-      setInFlight(taken);
-    }
-  }, [desk, live, phase, reduced, txs]);
-
-  const reset = useCallback(() => {
+  const refresh = useCallback(() => {
     setInFlight(null);
     setError(null);
-    if (live?.live) {
-      void fetchState().then(setLive);
-      return;
-    }
-    setClip(createClip());
-  }, [live?.live]);
+    void fetchState().then(setLive);
+  }, []);
 
   const [outbound, inbound] = receipts(phase);
   const books = booksFor(
     phase,
-    live?.live ? { deskShares: live.deskShares, paulShares: live.paulShares } : undefined,
+    live ? { deskShares: live.deskShares, paulShares: live.paulShares } : undefined,
   );
   const move = nextMove(phase);
   const busy = inFlight !== null;
@@ -170,15 +136,15 @@ export function SettlementRoom() {
               <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-success" />
               <span className="font-mono text-[11px] text-muted-foreground">
                 {NETWORK}
-                {live ? (live.live ? " · live" : " · tape") : ""}
+                {armed ? " · live" : ""}
               </span>
             </span>
             <button
               type="button"
-              onClick={reset}
+              onClick={refresh}
               className="text-[12px] text-muted-foreground underline underline-offset-4 hover:text-foreground"
             >
-              {live?.live ? "Refresh" : "Reset"}
+              Refresh
             </button>
           </div>
         </div>
@@ -222,7 +188,13 @@ export function SettlementRoom() {
           </div>
 
           <div className="order-1 lg:order-2">
-            <VerdictBand phase={phase} busy={busy} txs={txs} onAdvance={() => void run()} />
+            <VerdictBand
+              phase={phase}
+              busy={busy}
+              armed={armed}
+              txs={txs}
+              onAdvance={() => void run()}
+            />
 
             {error ? (
               <p className="mt-4 text-[13px] text-destructive" aria-live="polite">
@@ -230,7 +202,13 @@ export function SettlementRoom() {
               </p>
             ) : null}
 
-            {busy && live?.live ? (
+            {!armed && live !== null ? (
+              <p className="mt-3 text-[12px] text-muted-foreground">
+                This instance is not connected to a live desk.
+              </p>
+            ) : null}
+
+            {busy && armed ? (
               <p className="mt-3 text-[12px] text-muted-foreground" aria-live="polite">
                 submitting on Base Sepolia…
               </p>

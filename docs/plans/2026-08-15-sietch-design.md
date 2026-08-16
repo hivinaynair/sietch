@@ -8,11 +8,11 @@ This is the product design, not a line-by-line implementation plan. Implementati
 
 ## 1. What we are building, in one paragraph
 
-Sietch is a **job-application demo for Metal (Loong)**. It is not a blockchain. It is not Bare Metal and not Touchstone.
+Sietch is a **demonstration of one Metal primitive**. It is not a blockchain. It is not Bare Metal and not Touchstone.
 
 Metal’s unsolved sentence ([Hello, Metal](https://metalntwx.com/blog/hello-metal/)): when funds do not settle instantly, it is often the **AML / fraud policies of the beneficiary’s institution** — and an ideal chain lets **institutions and regulators** define custom rules, **enforce them on-chain as part of settlement**, without the **network seeing the policy**. Homepage: compliance executes **provably, privately, and instantly** during settlement.
 
-Sietch demonstrates **one** Metal primitive: **programmable private policy at settlement**. Not customer identity, not agents, not Airwallex ramps. Those are his other pillars; we name them out of scope so it does not look like we missed them by accident.
+Sietch demonstrates **one** Metal primitive: **programmable private policy at settlement**. Not customer identity, not agents, not Airwallex ramps. Those are other pillars; we name them out of scope so it does not look like we missed them by accident.
 
 **Four actors.** Two people, two **institutions**. Only the institutions own policy. A T-bill may sit with a custodian, broker, or treasury; we use **institution** as the type. Paul’s side is the **beneficiary institution**. A regulator would be a third policy publisher; v1 does **not** add that seat.
 
@@ -23,9 +23,9 @@ Sietch demonstrates **one** Metal primitive: **programmable private policy at se
 | **Chani** | Customer of the sending institution (labelled India) | Instructs a T-bill delivery. Never publishes policy. |
 | **Chani’s institution** | Sending institution (outbound T-bill policy, private) | Must allow the send. Issues its **own** receipt. |
 | **Paul** | Customer of the beneficiary institution (labelled US) | Is the beneficiary principal. Never publishes policy. |
-| **Paul’s institution** | Beneficiary institution (inbound T-bill policy, private) | Must allow the receive. Issues its **own** receipt. **Only this institution publishes v2.** Loong sits here. |
+| **Paul’s institution** | Beneficiary institution (inbound T-bill policy, private) | Must allow the receive. Issues its **own** receipt. **Only this institution publishes v2.** This is the seat the demo defaults to. |
 
-**Two receipts, not one shared prover.** Loong’s attack on subnets is that **operators can see everything**. One guest that reads **both** rulebooks recreates that hole. v1: the **same** program runs **twice**. Each run’s private input is **only that institution’s** inbound or outbound T-bill policy. The contract verifies both receipts in **one settlement transaction** and moves the share iff both `allowed`. The demo operator may generate both proofs on one machine, but **never in one stdin**. README says: production Metal would have each institution prove locally; this recording isolates stdin the same way.
+**Two receipts, not one shared prover.** The attack on subnets is that **operators can see everything**. One guest that reads **both** rulebooks recreates that hole. v1: the **same** program runs **twice**. Each run’s private input is **only that institution’s** inbound or outbound T-bill policy. The contract verifies both receipts in **one settlement transaction** and moves the share iff both `allowed`. The demo operator may generate both proofs on one machine, but **never in one stdin**. README says: production Metal would have each institution prove locally; this recording isolates stdin the same way.
 
 The public site shows: Chani’s institution allowed, Paul’s institution refused → Paul’s institution publishes **inbound T-bill policy v2** → Chani instructs the **same** delivery again → both allow, share **settles for Paul**.
 
@@ -50,7 +50,7 @@ The public site shows: Chani’s institution allowed, Paul’s institution refus
 
 **Zero-knowledge** here means: the chain learns the **public values** and that they came from the guest. It does **not** learn stdin (the clauses). It is not “the whole transfer is invisible.” Amounts and parties can stay public in v1. That is an honest limit (activity privacy is the subnet paragraph; we are answering the **policy** paragraph).
 
-## 3. What Loong should believe after three minutes
+## 3. What an informed reader should believe after three minutes
 
 1. Chani can instruct a delivery that her **own** institution allows and Paul’s **beneficiary** institution still refuses.
 2. The chain cannot print either institution’s inbound/outbound T-bill rules, including on deny. It may show **which institution** failed.
@@ -95,9 +95,9 @@ Evidence is the two settlement txs (each with two receipts) and the publish tx, 
 
 ## 5b. UI and journeys
 
-**One URL, four seats, not four products.** A production institution would give Chani a client app and its treasury a console. Sietch v1 is a job-application clip. Four logins would be a suite, not a 3-minute proof.
+**One URL, four seats, not four products.** A production institution would give Chani a client app and its treasury a console. Sietch v1 is a demonstration clip. Four logins would be a suite, not a 3-minute proof.
 
-The page is a settlement room on Touchstone paper. A seat switcher (Chani · Chani’s institution · Paul · Paul’s institution) changes copy and which actions exist. **Default seat: Paul’s institution** (Loong). Chain state is shared; switching seats does not create a second world.
+The page is a settlement room on Touchstone paper. A seat switcher (Chani · Chani’s institution · Paul · Paul’s institution) changes copy and which actions exist. **Default seat: Paul’s institution.** Chain state is shared; switching seats does not create a second world.
 
 ### Screen
 
@@ -143,7 +143,7 @@ Native SP1 proofs are STARKs: too big/expensive to verify on Ethereum ([on-chain
 - **Groth16** (recommended): ~260 bytes, ~270k gas **per verify**. Trusted setup = Aztec Ignition + Succinct entropy. We **disclose** that in the README.
 - **PLONK**: no extra trusted setup, ~868 bytes, ~300k gas, slower, **64GB+ RAM** locally.
 
-v1 = Groth16. Two verifies per settlement ≈ **~540k gas** plus transfer. If Loong hates trusted setups, we can regenerate PLONK proofs later; the guest does not change.
+v1 = Groth16. Two verifies per settlement ≈ **~540k gas** plus transfer. If the trusted setup is unacceptable, we can regenerate PLONK proofs later; the guest does not change.
 
 Local Groth16: Docker, **16GB+ RAM**, Docker Desktop memory bump on Mac ([hardware](https://docs.succinct.xyz/docs/sp1/getting-started/hardware-requirements)). Aggregation wants 32GB. We develop with `--execute` (no proof) and `SP1_PROVER=mock` until the guest is right, then Groth16 **four** times for the public page (send 1 sender, send 1 receiver, send 2 sender, send 2 receiver).
 
@@ -165,7 +165,7 @@ Replay: the gateway is `view`. **We** must consume a `transferId` shared by both
 
 Not BlackRock BUIDL. Not ERC-3643 (permissioned security token — a real RWA standard, too much surface for v1). Name in the token and README: `Sietch T-Bill Share (demo)`.
 
-This is a **T-bill delivery**, not a payment. Loong-facing copy: **inbound T-bill policy** / **outbound T-bill policy**. Origin is a **book label from the directory**, not a country the customer types and not a field the institution publishes. Outbound receipts may only attest `origin == directory[org]`. The live flip is Paul’s `accepts_cross_border`: v1 false → v2 true. `max_amount` stays 10. We do not verify customer passports (that identity is v2). Do not print the flag on the public page.
+This is a **T-bill delivery**, not a payment. Public copy: **inbound T-bill policy** / **outbound T-bill policy**. Origin is a **book label from the directory**, not a country the customer types and not a field the institution publishes. Outbound receipts may only attest `origin == directory[org]`. The live flip is Paul’s `accepts_cross_border`: v1 false → v2 true. `max_amount` stays 10. We do not verify customer passports (that identity is v2). Do not print the flag on the public page.
 
 ### 6.5 Foundry for contracts — yes
 
@@ -188,7 +188,7 @@ SP1 Groth16 is not a browser SDK. NoirJS is; we still are not using Noir. Delive
 | New L1 | Metal’s job, not an application |
 | One guest stdin with **both** policies | Recreates “operators can see everything” |
 | Noir / Aztec.nr | Wrong ecosystem signal; circuit not “programmable policy as a program” |
-| Fake proofs in React state | He will know |
+| Fake proofs in React state | An informed reader will check |
 | Live “click and wait for Groth16” on the homepage | Fragile; not instant settlement; looks broken |
 | Claiming “instant proving” | Instant = verify at settlement |
 | x402 / Eve / agent spline | Bare Metal / Touchstone; different Metal pillar |
@@ -295,7 +295,7 @@ Public copy: **instruct**, **deliver**, **inbound T-bill policy**, **settlement 
 4. Wire real gateway on Sepolia; Groth16 for one side first, then the pair.
 5. Settlement room UI reading artifacts (copy from §10).
 6. Four proofs + publish tx; freeze demo artifacts.
-7. README for Loong (claim first, two receipts, stand-in, what’s not real, instant = verify).
+7. README (claim first, two receipts, stand-in, what’s not real, instant = verify).
 
 Eve stays later: agents draft policy; they do not settle.
 

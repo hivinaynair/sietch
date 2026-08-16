@@ -103,7 +103,7 @@ test("history can link the txs that just landed", () => {
   expect(pending.find((entry) => entry.what.startsWith("settle()"))?.tx).toBe(hash);
 });
 
-test("the refusal stays on the tape after v2 is published", () => {
+test("the refusal stays on the transcript after v2 is published", () => {
   const refusal = history("settled").filter((e) => e.what.includes("allowed false"));
   expect(refusal).toHaveLength(1);
 });
