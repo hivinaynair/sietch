@@ -68,7 +68,9 @@ fn main() {
     };
 
     let directory = Directory::demo();
-    let home = directory.home_of(org).expect("demo orgs are in the directory");
+    let home = directory
+        .home_of(org)
+        .expect("demo orgs are in the directory");
     let policy = Policy {
         max_amount: 10,
         accepts_cross_border,
