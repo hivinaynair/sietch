@@ -6,6 +6,8 @@ test("home page is the settlement room with Chani to move", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "Sietch", level: 1 })).toBeVisible();
   await expect(page.getByText("Chani to move")).toBeVisible();
   await expect(page.getByText("1 sTBILL · Chani (India) → Paul (US)")).toBeVisible();
+  await expect(page.getByText("1 share on the desk")).toBeVisible();
+  await expect(page.getByText("0 shares on the books")).toBeVisible();
 });
 
 test("Chani and Paul hold opposite ends and neither policy is readable", async ({ page }) => {

@@ -2,6 +2,7 @@
 
 import { shortHash, txUrl } from "./chain";
 import { moveLabel, nextMove, type Phase, roomCopy, whoseMove } from "./clip";
+import type { ClipTxes } from "./desk-phase";
 import { type Operand, settlement, whatJustHappened } from "./narrative";
 
 const TONE = {
@@ -44,13 +45,15 @@ function Side({ operand }: { operand: Operand }) {
 export function VerdictBand({
   phase,
   busy,
+  txs,
   onAdvance,
 }: {
   phase: Phase;
   busy: boolean;
+  txs?: ClipTxes;
   onAdvance: () => void;
 }) {
-  const result = settlement(phase);
+  const result = settlement(phase, txs);
   const move = nextMove(phase);
 
   return (

@@ -22,7 +22,7 @@ export DESK=0xF94822401F3DdEC9e53c4143A4eFEdF61488dFA7
 forge script script/Clip.s.sol --root contracts --rpc-url https://sepolia.base.org --broadcast
 ```
 
-Live clip (Base Sepolia): desk `0xF94822401F3DdEC9e53c4143A4eFEdF61488dFA7`. Hashes in `artifacts/demo/chain.json`.
+The spent exhibit desk is `0xF94822401F3DdEC9e53c4143A4eFEdF61488dFA7`. A live walk needs a **fresh** desk (same receipts, empty `usedTransfer`, 1 share on the desk). Then set `SIETCH_DESK_ADDRESS` + `SIETCH_CLERK_PRIVATE_KEY` on the web app. The click submits `settle()` / `publishInbound`.
 
 `publishInbound` is callable by the deploy key (demo clerk). Production would leave `publisher` as `address(0)` so only `0x2222…` (Paul’s institution) can publish. We do not have that key.
 

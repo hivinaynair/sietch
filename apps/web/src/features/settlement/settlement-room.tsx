@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { BeatSpine } from "./beat-spine";
-import { addressUrl } from "./chain";
+import { booksFor } from "./books";
+import { addressUrl, CLIP_TX } from "./chain";
 import { Channel } from "./channel";
 import { type Action, advance, availableAction, createClip, nextMove } from "./clip";
+import type { ClipTxes } from "./desk-phase";
 import { type Activity, InstitutionSlab } from "./institution-slab";
 import { announcement } from "./narrative";
 import { PrivacyLedger } from "./privacy-ledger";
@@ -12,8 +14,18 @@ import { DELIVERY, DESK, history, NETWORK, PROGRAM_VKEY, receipts } from "./sett
 import { Transcript } from "./transcript";
 import { VerdictBand } from "./verdict-band";
 
-/** Long enough to read as two institutions answering separately, short enough to stay instant. */
-const RECEIPT_BEAT_MS = 650;
+/** Tape only. Live waits on the receipt instead of a timer. */
+const TAPE_BEAT_MS = 650;
+
+type RoomState = {
+  live: boolean;
+  phase: "idle" | "pending" | "published" | "settled";
+  desk: string;
+  txs: ClipTxes;
+  deskShares: number;
+  paulShares: number;
+  error?: string;
+};
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false);
@@ -29,11 +41,6 @@ function usePrefersReducedMotion() {
   return reduced;
 }
 
-/**
- * What each side is doing during the beat, from the move being taken rather than the
- * phase being entered. Only an instruction produces receipts, and it produces two of
- * them: a publish is one institution changing its own rulebook, not a receipt at all.
- */
 function activityFor(action: Action | null): { outbound: Activity; inbound: Activity } {
   if (action === "instruct") {
     return { outbound: "issuing", inbound: "issuing" };
@@ -44,37 +51,107 @@ function activityFor(action: Action | null): { outbound: Activity; inbound: Acti
   return { outbound: null, inbound: null };
 }
 
+async function fetchState(): Promise<RoomState> {
+  const res = await fetch("/api/clip/state");
+  const body = (await res.json()) as Partial<RoomState>;
+  return {
+    live: Boolean(body.live),
+    phase: body.phase ?? "idle",
+    desk: body.desk ?? DESK,
+    txs: body.txs ?? {},
+    deskShares: body.deskShares ?? 1,
+    paulShares: body.paulShares ?? 0,
+    error: body.error,
+  };
+}
+
 export function SettlementRoom() {
   const [clip, setClip] = useState(createClip);
+  const [live, setLive] = useState<RoomState | null>(null);
   const [inFlight, setInFlight] = useState<Action | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const reduced = usePrefersReducedMotion();
 
   useEffect(() => {
-    if (!inFlight) {
+    void fetchState()
+      .then((state) => {
+        setLive(state);
+        if (state.error && state.live) {
+          setError(state.error);
+        }
+      })
+      .catch(() => {
+        setLive({
+          live: false,
+          phase: "idle",
+          desk: DESK,
+          txs: CLIP_TX,
+          deskShares: 1,
+          paulShares: 0,
+        });
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!inFlight || live?.live) {
       return;
     }
-    const timer = window.setTimeout(() => setInFlight(null), RECEIPT_BEAT_MS);
+    const timer = window.setTimeout(() => setInFlight(null), TAPE_BEAT_MS);
     return () => window.clearTimeout(timer);
-  }, [inFlight]);
+  }, [inFlight, live?.live]);
 
-  const run = useCallback(() => {
-    const taken = availableAction(clip);
+  const phase = live?.live ? live.phase : clip.phase;
+  const txs = live?.live ? live.txs : CLIP_TX;
+  const desk = live?.desk ?? DESK;
+
+  const run = useCallback(async () => {
+    const taken = availableAction({ phase });
+    if (live?.live) {
+      setInFlight(taken);
+      setError(null);
+      const res = await fetch("/api/clip/advance", { method: "POST" }).catch(() => undefined);
+      const body = (await res?.json().catch(() => undefined)) as Partial<RoomState> | undefined;
+      if (!res?.ok || !body) {
+        setError(body?.error ?? "settle() did not land");
+        setInFlight(null);
+        return;
+      }
+      setLive({
+        live: true,
+        phase: body.phase ?? phase,
+        desk: body.desk ?? desk,
+        txs: body.txs ?? txs,
+        deskShares: body.deskShares ?? 0,
+        paulShares: body.paulShares ?? 0,
+      });
+      setInFlight(null);
+      return;
+    }
+
     setClip(advance);
     if (!reduced) {
       setInFlight(taken);
     }
-  }, [clip, reduced]);
+  }, [desk, live, phase, reduced, txs]);
 
   const reset = useCallback(() => {
     setInFlight(null);
+    setError(null);
+    if (live?.live) {
+      void fetchState().then(setLive);
+      return;
+    }
     setClip(createClip());
-  }, []);
+  }, [live?.live]);
 
-  const [outbound, inbound] = receipts(clip.phase);
-  const move = nextMove(clip.phase);
+  const [outbound, inbound] = receipts(phase);
+  const books = booksFor(
+    phase,
+    live?.live ? { deskShares: live.deskShares, paulShares: live.paulShares } : undefined,
+  );
+  const move = nextMove(phase);
   const busy = inFlight !== null;
   const activity = activityFor(inFlight);
-  /** The column with the move lights up; once settled, the beneficiary holds the share. */
   const sendingIsUp = move?.actor === "chani" || move?.actor === "chani-institution";
 
   return (
@@ -90,68 +167,84 @@ export function SettlementRoom() {
           <div className="flex items-center gap-5">
             <span className="flex items-center gap-2">
               <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-success" />
-              <span className="font-mono text-[11px] text-muted-foreground">{NETWORK}</span>
+              <span className="font-mono text-[11px] text-muted-foreground">
+                {NETWORK}
+                {live ? (live.live ? " · live" : " · tape") : ""}
+              </span>
             </span>
             <button
               type="button"
               onClick={reset}
               className="text-[12px] text-muted-foreground underline underline-offset-4 hover:text-foreground"
             >
-              Reset
+              {live?.live ? "Refresh" : "Reset"}
             </button>
           </div>
         </div>
       </header>
 
-      {/*
-       * The room's one live region. Five of them used to fire per click, in undefined
-       * order; this says the pair and what settle() did with it, once.
-       */}
       <p className="sr-only" role="status">
-        {announcement(clip.phase)}
+        {announcement(phase)}
       </p>
 
       <main className="mx-auto w-full max-w-[1180px] flex-1 px-8 pt-8 pb-16">
-        {/* The stage: what is being delivered, and between whom. Amounts are public in v1. */}
         <p className="text-[13px] text-muted-foreground">
           {DELIVERY.amount} {DELIVERY.symbol} · {DELIVERY.sender} ({DELIVERY.senderBook}) →{" "}
           {DELIVERY.beneficiary} ({DELIVERY.beneficiaryBook})
         </p>
 
         <div className="mt-6">
-          <BeatSpine phase={clip.phase} />
+          <BeatSpine phase={phase} />
         </div>
 
         <div className="mt-9 grid items-stretch gap-6 lg:grid-cols-[1fr_auto_1fr]">
-          <InstitutionSlab receipt={outbound} active={sendingIsUp} activity={activity.outbound} />
-          <Channel phase={clip.phase} busy={busy} />
+          <InstitutionSlab
+            receipt={outbound}
+            active={sendingIsUp}
+            activity={activity.outbound}
+            shares={books.deskShares}
+          />
+          <Channel phase={phase} busy={busy} />
           <InstitutionSlab
             receipt={inbound}
             active={!sendingIsUp}
             activity={activity.inbound}
+            shares={books.paulShares}
             align="right"
           />
         </div>
 
         <div className="mt-8">
-          <VerdictBand phase={clip.phase} busy={busy} onAdvance={run} />
+          <VerdictBand phase={phase} busy={busy} txs={txs} onAdvance={() => void run()} />
         </div>
 
+        {error ? (
+          <p className="mt-4 text-[13px] text-destructive" aria-live="polite">
+            {error}
+          </p>
+        ) : null}
+
+        {busy && live?.live ? (
+          <p className="mt-3 text-[12px] text-muted-foreground" aria-live="polite">
+            submitting on Base Sepolia…
+          </p>
+        ) : null}
+
         <div className="mt-8">
-          <PrivacyLedger phase={clip.phase} />
+          <PrivacyLedger phase={phase} />
         </div>
 
         <div className="mt-10">
-          <Transcript entries={history(clip.phase)} />
+          <Transcript entries={history(phase, txs)} />
           <p className="mt-5 break-all font-mono text-[11px] text-muted-foreground">
             desk{" "}
             <a
-              href={addressUrl(DESK)}
+              href={addressUrl(desk)}
               target="_blank"
               rel="noreferrer"
               className="underline decoration-border underline-offset-4 hover:text-foreground"
             >
-              {DESK}
+              {desk}
             </a>
             <br />
             vkey {PROGRAM_VKEY}

@@ -1,7 +1,7 @@
 import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = process.env.PORT ?? "3000";
+const PORT = process.env.PORT ?? "3100";
 const baseURL = `http://localhost:${PORT}`;
 const webDir = path.join(import.meta.dirname, "../../apps/web");
 
@@ -24,8 +24,9 @@ export default defineConfig({
     command: "bun run start",
     cwd: webDir,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
+    env: { ...process.env, SIETCH_LIVE: "0" },
   },
   projects: [
     {

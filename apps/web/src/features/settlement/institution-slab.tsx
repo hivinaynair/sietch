@@ -1,5 +1,6 @@
 "use client";
 
+import { booksLabel } from "./books";
 import type { Receipt } from "./settlement";
 
 const SIDE_LABEL = {
@@ -37,10 +38,10 @@ function SealedPolicy({ label, hash, align }: { label: string; hash: string; ali
  */
 function ReceiptChip({ receipt, activity }: { receipt: Receipt; activity: Activity }) {
   if (activity === "issuing") {
-    return <span className="text-[13px] text-muted-foreground">issuing receipt…</span>;
+    return <span className="text-[13px] text-muted-foreground">submitting settle()…</span>;
   }
   if (activity === "publishing") {
-    return <span className="text-[13px] text-muted-foreground">publishing v2…</span>;
+    return <span className="text-[13px] text-muted-foreground">submitting publish()…</span>;
   }
   if (receipt.allowed === null) {
     return <span className="text-[13px] text-muted-foreground">no receipt yet</span>;
@@ -73,11 +74,14 @@ export function InstitutionSlab({
   receipt,
   active,
   activity,
+  shares,
   align = "left",
 }: {
   receipt: Receipt;
   active: boolean;
   activity: Activity;
+  /** On-chain sTBILL count for this side. Desk for Chani; Paul’s institution for Paul. */
+  shares?: number;
   align?: Align;
 }) {
   return (
@@ -97,6 +101,11 @@ export function InstitutionSlab({
         <p className="mt-1 text-[12.5px] text-muted-foreground">
           {receipt.institution} · directory book {receipt.book}
         </p>
+        {shares !== undefined ? (
+          <p className="mt-3 font-heading text-[22px] tabular-nums tracking-[-0.02em]">
+            {booksLabel(receipt.side, shares)}
+          </p>
+        ) : null}
       </div>
 
       <SealedPolicy label={receipt.policyLabel} hash={receipt.policyHash} align={align} />

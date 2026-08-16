@@ -19,6 +19,7 @@ import {
   TRANSFER_ATTEMPT_1,
   TRANSFER_ATTEMPT_2,
 } from "./clip-artifacts";
+import type { ClipTxes } from "./desk-phase";
 
 export const NETWORK = "Base Sepolia · 84532";
 
@@ -167,7 +168,7 @@ export type Entry = {
 };
 
 /** Chain history so far. Append-only: publishing v2 never rewrites the refusal. */
-export function history(phase: Phase): readonly Entry[] {
+export function history(phase: Phase, txs: ClipTxes = CLIP_TX): readonly Entry[] {
   if (phase === "idle") {
     return [];
   }
@@ -192,7 +193,7 @@ export function history(phase: Phase): readonly Entry[] {
       at: "00:02",
       who: "Desk",
       what: "settle() · no transfer · settlement pending beneficiary policy",
-      tx: CLIP_TX.settlePending,
+      tx: txs.settlePending,
       tone: "held",
     },
   ];
@@ -207,7 +208,7 @@ export function history(phase: Phase): readonly Entry[] {
       at: "01:10",
       who: "Paul’s institution",
       what: "Published inbound T-bill policy v2",
-      tx: CLIP_TX.publishInboundV2,
+      tx: txs.publishInboundV2,
     },
   ];
 
@@ -234,7 +235,7 @@ export function history(phase: Phase): readonly Entry[] {
       at: "01:16",
       who: "Desk",
       what: "settle() · 1 share posted for Paul",
-      tx: CLIP_TX.settleForPaul,
+      tx: txs.settleForPaul,
       tone: "settled",
     },
   ];

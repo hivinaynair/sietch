@@ -78,6 +78,12 @@ test("history is append-only across the clip", () => {
   expect(settled.at(-1)?.tx).toBe(CLIP_TX.settleForPaul);
 });
 
+test("history can link the txs that just landed", () => {
+  const hash = `0x${"ab".repeat(32)}`;
+  const pending = history("pending", { settlePending: hash });
+  expect(pending.find((entry) => entry.what.startsWith("settle()"))?.tx).toBe(hash);
+});
+
 test("the refusal stays on the tape after v2 is published", () => {
   const refusal = history("settled").filter((e) => e.what.includes("allowed false"));
   expect(refusal).toHaveLength(1);

@@ -5,6 +5,9 @@ import "./src/env";
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: resolve(import.meta.dirname, "../.."),
+  outputFileTracingIncludes: {
+    "/api/clip/advance": ["../../artifacts/demo/*.groth16.json"],
+  },
   transpilePackages: ["@repo/ui", "@splinetool/react-spline", "@splinetool/runtime"],
 };
 

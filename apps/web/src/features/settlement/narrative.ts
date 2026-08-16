@@ -10,6 +10,7 @@
  */
 import { CLIP_TX } from "./chain";
 import type { Phase } from "./clip";
+import type { ClipTxes } from "./desk-phase";
 
 export type BeatStatus = "done" | "current" | "upcoming";
 
@@ -75,7 +76,7 @@ const INBOUND = { side: "inbound", issuer: "Paul’s institution" } as const;
  * Settlement is the AND of two receipts. Stating it in prose leaves the reader to take it
  * on trust; these are the operands and the result, so the AND can be read as an operation.
  */
-export function settlement(phase: Phase): Settlement {
+export function settlement(phase: Phase, txs: ClipTxes = CLIP_TX): Settlement {
   switch (phase) {
     case "idle":
       return {
@@ -90,7 +91,7 @@ export function settlement(phase: Phase): Settlement {
         inbound: { ...INBOUND, allowed: false, historic: false },
         outcome: "no transfer · settlement pending beneficiary policy",
         tone: "held",
-        tx: CLIP_TX.settlePending,
+        tx: txs.settlePending,
       };
     case "published":
       return {
@@ -98,7 +99,7 @@ export function settlement(phase: Phase): Settlement {
         inbound: { ...INBOUND, allowed: false, historic: true },
         outcome: "no transfer · the pair on chain is still attempt 1",
         tone: "held",
-        tx: CLIP_TX.settlePending,
+        tx: txs.settlePending,
         footnote:
           "Inbound v2 is in force, but a policy version is not a settlement. The same delivery has to be instructed again before either institution issues a new receipt.",
       };
@@ -108,7 +109,7 @@ export function settlement(phase: Phase): Settlement {
         inbound: { ...INBOUND, allowed: true, historic: false },
         outcome: "1 share posted for Paul",
         tone: "settled",
-        tx: CLIP_TX.settleForPaul,
+        tx: txs.settleForPaul,
       };
   }
 }
