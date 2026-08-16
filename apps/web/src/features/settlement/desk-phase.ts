@@ -69,3 +69,27 @@ export function txsFromFacts(facts: DeskFacts): ClipTxes {
     settleForPaul: facts.settleForPaulTx,
   };
 }
+
+/**
+ * The write we just waited on, folded into facts the public RPC may not have indexed yet.
+ * `waitForTransactionReceipt` is not the same as `eth_getLogs` seeing the event — without
+ * this, settle-v1 returns idle and the room looks stuck until Refresh.
+ */
+export function factsAfterWrite<T extends DeskFacts>(facts: T, write: DeskWrite, hash: string): T {
+  switch (write) {
+    case "settle-v1":
+      return { ...facts, settlePendingTx: facts.settlePendingTx ?? hash };
+    case "publish":
+      return {
+        ...facts,
+        publishTx: facts.publishTx ?? hash,
+        inboundHash: POLICY_HASH_V2,
+      };
+    case "settle-v2":
+      return {
+        ...facts,
+        settleForPaulTx: facts.settleForPaulTx ?? hash,
+        attemptTwoUsed: true,
+      };
+  }
+}

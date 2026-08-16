@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { POLICY_HASH_V1, POLICY_HASH_V2 } from "./clip-artifacts";
-import { nextWrite, phaseFromDesk, txsFromFacts } from "./desk-phase";
+import { factsAfterWrite, nextWrite, phaseFromDesk, txsFromFacts } from "./desk-phase";
 
 const PENDING = `0x${"aa".repeat(32)}` as const;
 const PUBLISH = `0x${"bb".repeat(32)}` as const;
@@ -80,6 +80,13 @@ test("the next write follows the clip and stops when settled", () => {
   expect(nextWrite("pending")).toBe("publish");
   expect(nextWrite("published")).toBe("settle-v2");
   expect(nextWrite("settled")).toBe(null);
+});
+
+test("a receipt we just waited on advances the phase even if logs are still empty", () => {
+  const stale = { inboundHash: POLICY_HASH_V1, attemptTwoUsed: false };
+  expect(phaseFromDesk(factsAfterWrite(stale, "settle-v1", PENDING))).toBe("pending");
+  expect(phaseFromDesk(factsAfterWrite(stale, "publish", PUBLISH))).toBe("published");
+  expect(phaseFromDesk(factsAfterWrite(stale, "settle-v2", SETTLED))).toBe("settled");
 });
 
 test("facts become the hashes the room links", () => {

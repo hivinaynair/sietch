@@ -88,11 +88,22 @@ export function SettlementRoom() {
     setInFlight(taken);
     setError(null);
     const res = await fetch("/api/clip/advance", { method: "POST" }).catch(() => undefined);
-    const body = (await res?.json().catch(() => undefined)) as Partial<RoomState> | undefined;
+    let body = (await res?.json().catch(() => undefined)) as Partial<RoomState> | undefined;
     if (!res?.ok || !body) {
       setError(body?.error ?? "settle() did not land");
       setInFlight(null);
       return;
+    }
+    // Public RPC can return the pre-write phase for a beat after the receipt.
+    if (body.live && (body.phase ?? phase) === phase) {
+      for (let i = 0; i < 10; i += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 700));
+        const next = await fetchState();
+        if (next.phase !== phase) {
+          body = next;
+          break;
+        }
+      }
     }
     setLive({
       live: true,

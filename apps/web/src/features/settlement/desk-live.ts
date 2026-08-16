@@ -9,6 +9,7 @@ import { DESK_ABI, TBILL_ABI } from "./desk-abi";
 import {
   type ClipTxes,
   type DeskFacts,
+  factsAfterWrite,
   nextWrite,
   phaseFromDesk,
   txsFromFacts,
@@ -209,8 +210,28 @@ export async function advanceClip(): Promise<ClipRoomState> {
           gas: 1_500_000n,
         });
 
-  await client.waitForTransactionReceipt({ hash });
-  const after = await readFacts(desk);
+  const receipt = await client.waitForTransactionReceipt({ hash });
+  if (receipt.status !== "success") {
+    return {
+      live: true,
+      phase: phaseFromDesk(before),
+      desk,
+      deskShares: before.deskShares,
+      paulShares: before.paulShares,
+      txs: txsFromFacts(before),
+      error: "settle() reverted",
+    };
+  }
+
+  let after = factsAfterWrite(await readFacts(desk), write, hash);
+  if (write === "settle-v2") {
+    const deadline = Date.now() + 20_000;
+    while (Date.now() < deadline && after.paulShares < 1) {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      after = factsAfterWrite(await readFacts(desk), write, hash);
+    }
+  }
+
   return {
     live: true,
     phase: phaseFromDesk(after),
