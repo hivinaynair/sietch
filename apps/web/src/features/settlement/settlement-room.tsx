@@ -17,6 +17,7 @@ import { VerdictBand } from "./verdict-band";
 
 type RoomState = {
   live: boolean;
+  rearmable?: boolean;
   phase: "idle" | "pending" | "published" | "settled";
   desk: string;
   txs: ClipTxes;
@@ -25,7 +26,9 @@ type RoomState = {
   error?: string;
 };
 
-function activityFor(action: Action | null): { outbound: Activity; inbound: Activity } {
+type Flight = Action | "rearm";
+
+function activityFor(action: Flight | null): { outbound: Activity; inbound: Activity } {
   if (action === "instruct") {
     return { outbound: "issuing", inbound: "issuing" };
   }
@@ -40,6 +43,7 @@ async function fetchState(): Promise<RoomState> {
   const body = (await res.json()) as Partial<RoomState>;
   return {
     live: Boolean(body.live),
+    rearmable: Boolean(body.rearmable),
     phase: body.phase ?? "idle",
     desk: body.desk ?? DESK,
     txs: body.txs ?? {},
@@ -51,7 +55,8 @@ async function fetchState(): Promise<RoomState> {
 
 export function SettlementRoom({ initial }: { initial?: RoomState }) {
   const [live, setLive] = useState<RoomState | null>(initial ?? null);
-  const [inFlight, setInFlight] = useState<Action | null>(null);
+  const [inFlight, setInFlight] = useState<Flight | null>(null);
+  const [confirmRearm, setConfirmRearm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -67,6 +72,7 @@ export function SettlementRoom({ initial }: { initial?: RoomState }) {
           (prev) =>
             prev ?? {
               live: false,
+              rearmable: false,
               phase: "idle",
               desk: DESK,
               txs: {},
@@ -82,6 +88,7 @@ export function SettlementRoom({ initial }: { initial?: RoomState }) {
   const txs = live?.txs ?? {};
   const desk = live?.desk ?? DESK;
   const armed = Boolean(live?.live);
+  const rearmable = Boolean(live?.rearmable);
 
   const run = useCallback(async () => {
     if (!armed) {
@@ -110,6 +117,7 @@ export function SettlementRoom({ initial }: { initial?: RoomState }) {
     }
     setLive({
       live: true,
+      rearmable: Boolean(body.rearmable),
       phase: body.phase ?? phase,
       desk: body.desk ?? desk,
       txs: body.txs ?? txs,
@@ -119,8 +127,32 @@ export function SettlementRoom({ initial }: { initial?: RoomState }) {
     setInFlight(null);
   }, [armed, desk, phase, txs]);
 
+  const runRearm = useCallback(async () => {
+    setConfirmRearm(false);
+    setInFlight("rearm");
+    setError(null);
+    const res = await fetch("/api/clip/rearm", { method: "POST" }).catch(() => undefined);
+    const body = (await res?.json().catch(() => undefined)) as Partial<RoomState> | undefined;
+    if (!res?.ok || !body) {
+      setError(body?.error ?? "rearm() did not land");
+      setInFlight(null);
+      return;
+    }
+    setLive({
+      live: Boolean(body.live),
+      rearmable: Boolean(body.rearmable),
+      phase: body.phase ?? "idle",
+      desk: body.desk ?? DESK,
+      txs: body.txs ?? {},
+      deskShares: body.deskShares ?? 1,
+      paulShares: body.paulShares ?? 0,
+    });
+    setInFlight(null);
+  }, []);
+
   const refresh = useCallback(() => {
     setInFlight(null);
+    setConfirmRearm(false);
     setError(null);
     void fetchState().then(setLive);
   }, []);
@@ -160,6 +192,40 @@ export function SettlementRoom({ initial }: { initial?: RoomState }) {
             >
               Refresh
             </button>
+            {rearmable ? (
+              confirmRearm ? (
+                <span className="flex flex-wrap items-center gap-3">
+                  <span className="text-[12px] text-muted-foreground">
+                    This spends gas and starts a new desk.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void runRearm()}
+                    disabled={busy}
+                    className="text-[12px] text-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-50"
+                  >
+                    Re-arm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmRearm(false)}
+                    disabled={busy}
+                    className="text-[12px] text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmRearm(true)}
+                  disabled={busy}
+                  className="text-[12px] text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-50"
+                >
+                  Re-arm
+                </button>
+              )
+            ) : null}
           </div>
         </div>
       </header>

@@ -5,7 +5,7 @@ import { DEPLOY_BLOCK } from "./chain";
 import type { Phase } from "./clip";
 import { POLICY_HASH_V2, RECEIVER_ORG, TRANSFER_ATTEMPT_2 } from "./clip-artifacts";
 import { groth16Receipt } from "./clip-receipts";
-import { DESK_ABI, TBILL_ABI } from "./desk-abi";
+import { DESK_ABI, FACTORY_ABI, TBILL_ABI } from "./desk-abi";
 import {
   type ClipTxes,
   type DeskFacts,
@@ -14,10 +14,12 @@ import {
   phaseFromDesk,
   txsFromFacts,
 } from "./desk-phase";
+import { factoryAddress, isClipLive, refuseRearm, resolveDeskPointer } from "./rearm";
 import { DESK } from "./settlement";
 
 export type ClipRoomState = {
   live: boolean;
+  rearmable: boolean;
   phase: Phase;
   desk: string;
   deskShares: number;
@@ -28,6 +30,19 @@ export type ClipRoomState = {
 
 const RPC = process.env.SIETCH_RPC_URL ?? "https://sepolia.base.org";
 
+function tape(error?: string): ClipRoomState {
+  return {
+    live: false,
+    rearmable: false,
+    phase: "idle",
+    desk: DESK,
+    deskShares: 1,
+    paulShares: 0,
+    txs: {},
+    ...(error ? { error } : {}),
+  };
+}
+
 function clerkKey(): Hex | null {
   const raw = process.env.SIETCH_CLERK_PRIVATE_KEY;
   if (!raw) {
@@ -36,40 +51,64 @@ function clerkKey(): Hex | null {
   return raw.startsWith("0x") ? (raw as Hex) : (`0x${raw}` as Hex);
 }
 
-function deskAddress(): `0x${string}` | null {
-  const raw = process.env.SIETCH_DESK_ADDRESS;
-  if (!raw?.startsWith("0x") || raw.length !== 42) {
-    return null;
-  }
-  return raw as `0x${string}`;
+function envDesk(): `0x${string}` | null {
+  return factoryAddress(process.env.SIETCH_DESK_ADDRESS);
+}
+
+function envFactory(): `0x${string}` | null {
+  return factoryAddress(process.env.SIETCH_FACTORY_ADDRESS);
 }
 
 export function isLive(): boolean {
-  return Boolean(clerkKey() && deskAddress() && process.env.SIETCH_LIVE !== "0");
+  return isClipLive({
+    clerk: Boolean(clerkKey()),
+    desk: Boolean(envDesk()),
+    factory: Boolean(envFactory()),
+    liveFlag: process.env.SIETCH_LIVE,
+  });
 }
 
-/**
- * Where to start scanning for the clip's events.
- *
- * Never a window relative to head. A sliding `latest - 9000` meant the transcript quietly
- * emptied about five hours after the clip ran. `SIETCH_FROM_BLOCK` wins; otherwise the desk's
- * deploy block from `artifacts/demo/chain.json`, which `bun run rearm` keeps current; failing
- * both, genesis — slower, but never wrong.
- */
-function deskFromBlock(): bigint {
-  const configured = process.env.SIETCH_FROM_BLOCK;
-  if (configured) {
-    return BigInt(configured);
-  }
-  return DEPLOY_BLOCK ? BigInt(DEPLOY_BLOCK) : 0n;
+export function isRearmable(): boolean {
+  return isLive() && Boolean(envFactory());
 }
 
 function publicClient() {
   return createPublicClient({ chain: baseSepolia, transport: http(RPC) });
 }
 
+async function readFactoryPointer(): Promise<{ desk: `0x${string}`; fromBlock: bigint } | null> {
+  const factory = envFactory();
+  if (!factory) {
+    return null;
+  }
+  const client = publicClient();
+  const [desk, fromBlock] = await Promise.all([
+    client.readContract({
+      address: factory,
+      abi: FACTORY_ABI,
+      functionName: "desk",
+    }),
+    client.readContract({
+      address: factory,
+      abi: FACTORY_ABI,
+      functionName: "fromBlock",
+    }),
+  ]);
+  return { desk, fromBlock };
+}
+
+async function deskPointer() {
+  return resolveDeskPointer({
+    factory: await readFactoryPointer(),
+    envDesk: process.env.SIETCH_DESK_ADDRESS,
+    envFromBlock: process.env.SIETCH_FROM_BLOCK,
+    artifactBlock: DEPLOY_BLOCK,
+  });
+}
+
 async function readFacts(
   desk: `0x${string}`,
+  fromBlock: bigint,
 ): Promise<DeskFacts & { deskShares: number; paulShares: number }> {
   const client = publicClient();
   const inboundHash = await client.readContract({
@@ -104,8 +143,6 @@ async function readFacts(
     }),
   ]);
 
-  const fromBlock = deskFromBlock();
-
   const pending = await client.getContractEvents({
     address: desk,
     abi: DESK_ABI,
@@ -138,19 +175,20 @@ async function readFacts(
 
 export async function readClipState(): Promise<ClipRoomState> {
   if (!isLive()) {
-    return { live: false, phase: "idle", desk: DESK, deskShares: 1, paulShares: 0, txs: {} };
+    return tape();
   }
 
-  const desk = deskAddress();
-  if (!desk) {
-    return { live: false, phase: "idle", desk: DESK, deskShares: 1, paulShares: 0, txs: {} };
+  const pointer = await deskPointer();
+  if (!pointer) {
+    return tape();
   }
 
-  const facts = await readFacts(desk);
+  const facts = await readFacts(pointer.desk, pointer.fromBlock);
   return {
     live: true,
+    rearmable: isRearmable(),
     phase: phaseFromDesk(facts),
-    desk,
+    desk: pointer.desk,
     deskShares: facts.deskShares,
     paulShares: facts.paulShares,
     txs: txsFromFacts(facts),
@@ -159,26 +197,19 @@ export async function readClipState(): Promise<ClipRoomState> {
 
 export async function advanceClip(): Promise<ClipRoomState> {
   const key = clerkKey();
-  const desk = deskAddress();
-  if (!key || !desk || process.env.SIETCH_LIVE === "0") {
-    return {
-      live: false,
-      phase: "idle",
-      desk: DESK,
-      deskShares: 1,
-      paulShares: 0,
-      txs: {},
-      error: "not live",
-    };
+  const pointer = await deskPointer();
+  if (!key || !pointer || process.env.SIETCH_LIVE === "0") {
+    return tape("not live");
   }
 
-  const before = await readFacts(desk);
+  const before = await readFacts(pointer.desk, pointer.fromBlock);
   const write = nextWrite(phaseFromDesk(before));
   if (!write) {
     return {
       live: true,
+      rearmable: isRearmable(),
       phase: "settled",
-      desk,
+      desk: pointer.desk,
       deskShares: before.deskShares,
       paulShares: before.paulShares,
       txs: txsFromFacts(before),
@@ -197,13 +228,13 @@ export async function advanceClip(): Promise<ClipRoomState> {
   const hash =
     write === "publish"
       ? await wallet.writeContract({
-          address: desk,
+          address: pointer.desk,
           abi: DESK_ABI,
           functionName: "publishInbound",
           args: [POLICY_HASH_V2],
         })
       : await wallet.writeContract({
-          address: desk,
+          address: pointer.desk,
           abi: DESK_ABI,
           functionName: "settle",
           args: settleArgs(write),
@@ -214,8 +245,9 @@ export async function advanceClip(): Promise<ClipRoomState> {
   if (receipt.status !== "success") {
     return {
       live: true,
+      rearmable: isRearmable(),
       phase: phaseFromDesk(before),
-      desk,
+      desk: pointer.desk,
       deskShares: before.deskShares,
       paulShares: before.paulShares,
       txs: txsFromFacts(before),
@@ -223,23 +255,58 @@ export async function advanceClip(): Promise<ClipRoomState> {
     };
   }
 
-  let after = factsAfterWrite(await readFacts(desk), write, hash);
+  let after = factsAfterWrite(await readFacts(pointer.desk, pointer.fromBlock), write, hash);
   if (write === "settle-v2") {
     const deadline = Date.now() + 20_000;
     while (Date.now() < deadline && after.paulShares < 1) {
       await new Promise((resolve) => setTimeout(resolve, 600));
-      after = factsAfterWrite(await readFacts(desk), write, hash);
+      after = factsAfterWrite(await readFacts(pointer.desk, pointer.fromBlock), write, hash);
     }
   }
 
   return {
     live: true,
+    rearmable: isRearmable(),
     phase: phaseFromDesk(after),
-    desk,
+    desk: pointer.desk,
     deskShares: after.deskShares,
     paulShares: after.paulShares,
     txs: txsFromFacts(after),
   };
+}
+
+export async function rearmClip(): Promise<ClipRoomState> {
+  const refusal = refuseRearm({ live: isLive(), factory: Boolean(envFactory()) });
+  if (refusal) {
+    return { ...tape(refusal.error), live: isLive() };
+  }
+
+  const key = clerkKey();
+  const factory = envFactory();
+  if (!key || !factory) {
+    return tape("not live");
+  }
+
+  const account = privateKeyToAccount(key);
+  const client = publicClient();
+  const wallet = createWalletClient({
+    account,
+    chain: baseSepolia,
+    transport: http(RPC),
+  });
+
+  const hash = await wallet.writeContract({
+    address: factory,
+    abi: FACTORY_ABI,
+    functionName: "rearm",
+  });
+  const receipt = await client.waitForTransactionReceipt({ hash });
+  if (receipt.status !== "success") {
+    const current = await readClipState();
+    return { ...current, error: "rearm() reverted" };
+  }
+
+  return readClipState();
 }
 
 function settleArgs(write: "settle-v1" | "settle-v2"): [Hex, Hex, Hex, Hex] {

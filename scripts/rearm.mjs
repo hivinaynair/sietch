@@ -1,13 +1,13 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { getAddress } from "../apps/web/node_modules/viem/_esm/index.js";
+import { baseSepolia } from "../apps/web/node_modules/viem/_esm/chains/index.js";
+import { createPublicClient, getAddress, http } from "../apps/web/node_modules/viem/_esm/index.js";
 
 /**
  * Fresh T-bill + desk for a live walk. Same receipts, empty usedTransfer, books 1 / 0.
  *
- * Reusing the previous sTBILL would leave shares on 0x2222… from the last settle,
- * so idle books would already show Paul holding. Prints the vercel env commands;
- * does not write Vercel itself.
+ * First run deploys ClipFactory (constructor arms a desk). Later runs call factory.rearm()
+ * so SIETCH_FACTORY_ADDRESS stays put — the live room reads the new desk without a redeploy.
  */
 const ROOT = join(import.meta.dir, "..");
 const CONTRACTS = join(ROOT, "contracts");
@@ -18,9 +18,36 @@ const RPC = process.env.SIETCH_RPC_URL ?? "https://sepolia.base.org";
 const PROGRAM_VKEY = "0x00035e8be65b2881b5409b3238047ddd679c9cce04cb4140973e04e9ed3330cd";
 const POLICY_HASH_V1 = "0x3e9abaca0aad9ede81f4474766c846d8539f70688e1c8f521bbe1597874e3dc4";
 
+const FACTORY_ABI = [
+  {
+    type: "function",
+    name: "desk",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address" }],
+  },
+  {
+    type: "function",
+    name: "tbill",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address" }],
+  },
+  {
+    type: "function",
+    name: "fromBlock",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+];
+
 const recordOnly = process.argv.includes("--record");
 
 await loadDotenv(join(CONTRACTS, ".env"));
+await loadDotenv(join(ROOT, "apps/web/.env.local"));
+
+const existingFactory = await resolveFactoryAddress();
 
 if (!recordOnly) {
   if (!process.env.PRIVATE_KEY) {
@@ -37,6 +64,9 @@ if (!recordOnly) {
       RPC,
       "--broadcast",
       "--slow",
+      // Foundry's default fee estimate overshoots this clerk; 0.007 gwei still clears Base Sepolia.
+      "--with-gas-price",
+      "7000000",
     ],
     {
       cwd: CONTRACTS,
@@ -46,6 +76,7 @@ if (!recordOnly) {
         PROGRAM_VKEY,
         CHANI_POLICY_HASH: POLICY_HASH_V1,
         PAUL_POLICY_HASH: POLICY_HASH_V1,
+        ...(existingFactory ? { SIETCH_FACTORY_ADDRESS: existingFactory } : {}),
       },
       stdout: "inherit",
       stderr: "inherit",
@@ -58,54 +89,105 @@ if (!recordOnly) {
 }
 
 const broadcast = await Bun.file(BROADCAST).json();
-const record = recordsFromBroadcast(broadcast);
+const factory = factoryFromBroadcast(broadcast) ?? existingFactory;
+if (!factory) {
+  throw new Error("Rearm broadcast missing ClipFactory and no SIETCH_FACTORY_ADDRESS");
+}
+
+const onChain = await readFactory(factory);
+const record = recordFrom(broadcast, factory, onChain);
 await Bun.write(CHAIN_JSON, `${JSON.stringify(record, null, 2)}\n`);
 
 console.log("");
-console.log(`tbill ${record.tbill}`);
-console.log(`desk  ${record.desk}`);
-console.log(`block ${record.deployBlock}`);
+console.log(`factory ${record.factory}`);
+console.log(`tbill   ${record.tbill}`);
+console.log(`desk    ${record.desk}`);
+console.log(`block   ${record.deployBlock}`);
 console.log("");
 console.log(
-  "Wrote artifacts/demo/chain.json. Set these on Vercel, then redeploy. Do not walk the desk.",
+  "Wrote artifacts/demo/chain.json. Set SIETCH_FACTORY_ADDRESS once; later re-arms need no env bump. Do not walk the desk.",
 );
 console.log("");
 for (const target of ["production", "preview", "development"]) {
-  console.log(`vercel env rm SIETCH_DESK_ADDRESS ${target} --yes`);
-  console.log(`printf '%s' '${record.desk}' | vercel env add SIETCH_DESK_ADDRESS ${target}`);
-  console.log(`vercel env rm SIETCH_FROM_BLOCK ${target} --yes`);
-  console.log(`printf '%s' '${record.deployBlock}' | vercel env add SIETCH_FROM_BLOCK ${target}`);
+  console.log(`vercel env rm SIETCH_FACTORY_ADDRESS ${target} --yes`);
+  console.log(`printf '%s' '${record.factory}' | vercel env add SIETCH_FACTORY_ADDRESS ${target}`);
 }
 
-function recordsFromBroadcast(broadcast) {
-  const tbillTx = broadcast.transactions.find(
-    (tx) => tx.contractName === "TBill" && tx.transactionType === "CREATE",
-  );
-  const deskTx = broadcast.transactions.find(
-    (tx) => tx.contractName === "Desk" && tx.transactionType === "CREATE",
-  );
-  const mintTx = broadcast.transactions.find((tx) => tx.function?.startsWith("mint("));
-  if (!tbillTx || !deskTx || !mintTx) {
-    throw new Error("Rearm broadcast missing TBill, Desk, or mint");
+async function resolveFactoryAddress() {
+  const fromEnv = process.env.SIETCH_FACTORY_ADDRESS;
+  if (fromEnv?.startsWith("0x") && fromEnv.length === 42) {
+    return getAddress(fromEnv);
   }
-  const deskReceipt = broadcast.receipts.find((r) => r.transactionHash === deskTx.hash);
-  if (!deskReceipt?.blockNumber) {
-    throw new Error("Rearm broadcast missing desk block number");
+  const chainFile = Bun.file(CHAIN_JSON);
+  if (!(await chainFile.exists())) {
+    return null;
   }
+  const chain = await chainFile.json();
+  if (typeof chain.factory === "string" && chain.factory.startsWith("0x")) {
+    return getAddress(chain.factory);
+  }
+  return null;
+}
+
+function factoryFromBroadcast(broadcast) {
+  const created = broadcast.transactions.find(
+    (tx) => tx.contractName === "ClipFactory" && tx.transactionType === "CREATE",
+  );
+  return created?.contractAddress ? getAddress(created.contractAddress) : null;
+}
+
+async function readFactory(factory) {
+  const client = createPublicClient({ chain: baseSepolia, transport: http(RPC) });
+  let lastError;
+  for (let i = 0; i < 8; i += 1) {
+    try {
+      const [desk, tbill, fromBlock] = await Promise.all([
+        client.readContract({ address: factory, abi: FACTORY_ABI, functionName: "desk" }),
+        client.readContract({ address: factory, abi: FACTORY_ABI, functionName: "tbill" }),
+        client.readContract({
+          address: factory,
+          abi: FACTORY_ABI,
+          functionName: "fromBlock",
+        }),
+      ]);
+      return { desk, tbill, fromBlock };
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  }
+  throw lastError;
+}
+
+function recordFrom(broadcast, factory, onChain) {
+  const writeTx =
+    broadcast.transactions.find(
+      (tx) => tx.contractName === "ClipFactory" && tx.transactionType === "CREATE",
+    ) ??
+    broadcast.transactions.find((tx) => tx.function?.startsWith("rearm(")) ??
+    broadcast.transactions[0];
+  if (!writeTx?.hash) {
+    throw new Error("Rearm broadcast missing factory create or rearm()");
+  }
+  const from =
+    writeTx.transaction?.from ??
+    broadcast.receipts.find((r) => r.transactionHash === writeTx.hash)?.from;
   return {
     network: "base-sepolia",
     chainId: 84532,
     gateway: "0x397A5f7f3dBd538f23DE225B51f532c34448dA9B",
-    tbill: getAddress(tbillTx.contractAddress),
-    desk: getAddress(deskTx.contractAddress),
-    publisher: getAddress(deskTx.transaction.from),
+    factory,
+    tbill: getAddress(onChain.tbill),
+    desk: getAddress(onChain.desk),
+    publisher: from ? getAddress(from) : undefined,
     beneficiaryInstitution: "0x2222222222222222222222222222222222222222",
     paulShares: 0,
-    deployBlock: Number.parseInt(deskReceipt.blockNumber, 16),
+    deployBlock: Number(onChain.fromBlock),
     deploy: {
-      tbill: tbillTx.hash,
-      desk: deskTx.hash,
-      mint: mintTx.hash,
+      factory: writeTx.hash,
+      tbill: writeTx.hash,
+      desk: writeTx.hash,
+      mint: writeTx.hash,
     },
     clip: {},
   };

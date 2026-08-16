@@ -28,6 +28,7 @@ test("addresses on the page match the committed artifact", () => {
   expect(DESK).toBe(artifact.desk);
   expect(TBILL).toBe(artifact.tbill);
   expect(VERIFIER_GATEWAY).toBe(artifact.gateway);
+  expect(artifact.factory).toMatch(/^0x[0-9a-fA-F]{40}$/);
 });
 
 test("every hash the room links is a whole hash", () => {
@@ -42,6 +43,6 @@ test("links resolve to the network the header claims", () => {
 });
 
 test("the short form is display only and never replaces the link target", () => {
-  expect(shortHash(DEPLOY_TX.tbill)).toBe("0x4b19…40e5");
+  expect(shortHash(DEPLOY_TX.tbill)).toBe("0x9d51…f98f");
   expect(txUrl(DEPLOY_TX.tbill)).toContain(DEPLOY_TX.tbill);
 });

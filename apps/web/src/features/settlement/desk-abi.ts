@@ -64,6 +64,37 @@ export const DESK_ABI = [
   },
 ] as const;
 
+export const FACTORY_ABI = [
+  {
+    type: "function",
+    name: "rearm",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "desk",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address" }],
+  },
+  {
+    type: "function",
+    name: "tbill",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address" }],
+  },
+  {
+    type: "function",
+    name: "fromBlock",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+] as const;
+
 export const TBILL_ABI = [
   {
     type: "function",

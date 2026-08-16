@@ -7,6 +7,10 @@ export const env = createEnv({
     DATABASE_URL_UNPOOLED: z.url().optional(),
     CLERK_SECRET_KEY: z.string().min(1).optional(),
     SIETCH_CLERK_PRIVATE_KEY: z.string().min(1).optional(),
+    SIETCH_FACTORY_ADDRESS: z
+      .string()
+      .regex(/^0x[0-9a-fA-F]{40}$/)
+      .optional(),
     SIETCH_DESK_ADDRESS: z
       .string()
       .regex(/^0x[0-9a-fA-F]{40}$/)

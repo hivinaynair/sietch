@@ -2,16 +2,18 @@
   "network": "base-sepolia",
   "chainId": 84532,
   "gateway": "0x397A5f7f3dBd538f23DE225B51f532c34448dA9B",
-  "tbill": "0xdf037efb99eAA7400B1C9fC156c03b65f8Bb8B5f",
-  "desk": "0xD6e98Db0B533dBAC4C06d64EC3683c7eBd50C7c0",
+  "factory": "0x68CA0553df49EBE900E9896B461f0201a106d74C",
+  "tbill": "0x97fA2ed87B52ADA95723Ed4fa000Dd443B5b946d",
+  "desk": "0x98a868E4FD7F4fB37F26F9ab86D8ebf3C913891e",
   "publisher": "0x2a0E981Ce32242654f10dD05e3259223fc74C024",
   "beneficiaryInstitution": "0x2222222222222222222222222222222222222222",
   "paulShares": 0,
-  "deployBlock": 45565919,
+  "deployBlock": 45566699,
   "deploy": {
-    "tbill": "0x4b199cba4829a22174e579482d68ceda0538096ecfaf7fba92ecdb42ea0940e5",
-    "desk": "0x345b604056e6db2d175f87bdf5ac7e84d455aa422969534b2d17218514a836ce",
-    "mint": "0xde5e041d660f57e02748b7460b2c44b6d95f9e6eff7ca8b6ca1237ae510627a6"
+    "factory": "0x9d51e48efc2ea2f9885659a50c1dcfea0445e54311780454eadc5eb8ad72f98f",
+    "tbill": "0x9d51e48efc2ea2f9885659a50c1dcfea0445e54311780454eadc5eb8ad72f98f",
+    "desk": "0x9d51e48efc2ea2f9885659a50c1dcfea0445e54311780454eadc5eb8ad72f98f",
+    "mint": "0x9d51e48efc2ea2f9885659a50c1dcfea0445e54311780454eadc5eb8ad72f98f"
   },
   "clip": {}
 }

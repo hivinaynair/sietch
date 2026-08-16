@@ -1,8 +1,7 @@
 /**
- * In-memory fixed window in front of settle() / publishInbound.
- * Unauthenticated POST /api/clip/advance spends the clerk's gas; this is the
- * cheap brake. Serverless isolates do not share memory, so it is a ceiling
- * per instance, not a global lock.
+ * In-memory fixed window in front of settle() / publishInbound / factory.rearm().
+ * Unauthenticated POSTs spend the clerk's gas; this is the cheap brake. Serverless
+ * isolates do not share memory, so it is a ceiling per instance, not a global lock.
  */
 
 export type LimitResult = { ok: true } | { ok: false; error: string };
@@ -14,11 +13,13 @@ export function createLimiter(options?: {
   perIp?: number;
   global?: number;
   now?: () => number;
+  refused?: string;
 }) {
   const windowMs = options?.windowMs ?? 10 * 60_000;
   const perIp = options?.perIp ?? 5;
   const global = options?.global ?? 20;
   const now = options?.now ?? Date.now;
+  const refused = options?.refused ?? REFUSED;
   const hits: { ip: string; at: number }[] = [];
 
   function prune(at: number) {
@@ -34,7 +35,7 @@ export function createLimiter(options?: {
       prune(at);
       const ipCount = hits.filter((hit) => hit.ip === ip).length;
       if (ipCount >= perIp || hits.length >= global) {
-        return { ok: false, error: REFUSED };
+        return { ok: false, error: refused };
       }
       hits.push({ ip, at });
       return { ok: true };

@@ -40,6 +40,7 @@ test("this instance does not play a recording — the control waits for a live d
 
   await expect(page.getByText("· tape")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Reset" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Re-arm" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Chani instructs the delivery" })).toBeDisabled();
   await expect(page.getByText("This instance is not connected to a live desk.")).toBeVisible();
 });
