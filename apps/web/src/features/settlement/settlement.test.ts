@@ -1,9 +1,14 @@
 import { expect, test } from "bun:test";
-import { CLIP_TX } from "./chain";
 import { forbiddenCopy, type Phase } from "./clip";
 import { channelNote, history, receipts, verdict } from "./settlement";
 
 const PHASES: Phase[] = ["idle", "pending", "published", "settled"];
+
+const SAMPLE_TX = {
+  settlePending: `0x${"11".repeat(32)}`,
+  publishInboundV2: `0x${"22".repeat(32)}`,
+  settleForPaul: `0x${"33".repeat(32)}`,
+};
 
 test("no receipt exists before an instruction", () => {
   const [outbound, inbound] = receipts("idle");
@@ -83,18 +88,18 @@ test("both receipts allow only once settled", () => {
 });
 
 test("history is append-only across the clip", () => {
-  const pending = history("pending");
-  const published = history("published");
-  const settled = history("settled");
+  const pending = history("pending", SAMPLE_TX);
+  const published = history("published", SAMPLE_TX);
+  const settled = history("settled", SAMPLE_TX);
   expect(history("idle")).toEqual([]);
   expect(published.slice(0, pending.length)).toEqual([...pending]);
   expect(settled.slice(0, published.length)).toEqual([...published]);
   expect(settled.at(-1)?.what).toContain("posted for Paul");
-  expect(pending.find((e) => e.what.startsWith("settle()"))?.tx).toBe(CLIP_TX.settlePending);
+  expect(pending.find((e) => e.what.startsWith("settle()"))?.tx).toBe(SAMPLE_TX.settlePending);
   expect(published.find((e) => e.what.includes("Published inbound"))?.tx).toBe(
-    CLIP_TX.publishInboundV2,
+    SAMPLE_TX.publishInboundV2,
   );
-  expect(settled.at(-1)?.tx).toBe(CLIP_TX.settleForPaul);
+  expect(settled.at(-1)?.tx).toBe(SAMPLE_TX.settleForPaul);
 });
 
 test("history can link the txs that just landed", () => {

@@ -87,6 +87,16 @@
       }
     },
     {
+      "includes": ["scripts/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noUndeclaredEnvVars": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["apps/*/src/features/**"],
       "linter": {
         "rules": {

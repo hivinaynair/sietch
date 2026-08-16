@@ -3,7 +3,7 @@
 Date: 2026-08-16  
 Status: implementing. The room stops being a player of `chain.json` and becomes a clerk for `Desk.sol`.
 
-## What Loong should believe
+## What this should demonstrate
 
 The click spends. Same as Bare Metal moving USDC — except the asset is the T-bill share, and the gate is two receipts. Receipts are precomputed (the funded wallet). `settle()` / `publishInbound` run now.
 
@@ -19,4 +19,4 @@ The click spends. Same as Bare Metal moving USDC — except the asset is the T-b
 
 Same four Groth16 files work on a new desk (`usedTransfer` empty, 1 share minted, inbound v1). Deploy before the meeting. The spent desk at `0xF948…` stays as the recorded exhibit.
 
-Live desk (2026-08-16): `0x94D3B70Dff6c8e19F60d742372E08461bC959164`. T-bill `0xC106Ee271b7Baa1399F2D5c2F59F769A71d6355a`. Paul’s books start at 0. One walk. Redeploy to rehearse again.
+Live desk (2026-08-16): `0xD6e98Db0B533dBAC4C06d64EC3683c7eBd50C7c0`. T-bill `0xdf037efb99eAA7400B1C9fC156c03b65f8Bb8B5f`. Paul’s books start at 0. One walk. Redeploy to rehearse again.

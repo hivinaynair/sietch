@@ -11,6 +11,6 @@ Four Groth16 receipts for the clip. The public page **verifies**; it does not pr
 
 `*.execute.json` are execute-only (`proof: null`). Keep them.
 
-`chain.json` is the Base Sepolia broadcast: desk `0xF948…dFA7`, tbill `0x66DD…7984`, then settle (pending) → publish inbound v2 → settle (for Paul). Paul’s institution (`0x2222…`) holds 1 share.
+`chain.json` is the Base Sepolia record for the **current** desk. `bun run rearm` rewrites it (new T-bill, new desk, empty clip). The share sits on the desk until someone walks the clip; Paul’s institution (`0x2222…`) holds 0.
 
 Guest token id in the receipts is `0x3333…3333`. The desk moves a deployed `sTBILL` and checks that id. Instant = two `verifyProof` calls, then transfer or not.

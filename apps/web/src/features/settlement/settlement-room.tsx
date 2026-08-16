@@ -49,8 +49,8 @@ async function fetchState(): Promise<RoomState> {
   };
 }
 
-export function SettlementRoom() {
-  const [live, setLive] = useState<RoomState | null>(null);
+export function SettlementRoom({ initial }: { initial?: RoomState }) {
+  const [live, setLive] = useState<RoomState | null>(initial ?? null);
   const [inFlight, setInFlight] = useState<Action | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,14 +63,17 @@ export function SettlementRoom() {
         }
       })
       .catch(() => {
-        setLive({
-          live: false,
-          phase: "idle",
-          desk: DESK,
-          txs: {},
-          deskShares: 1,
-          paulShares: 0,
-        });
+        setLive(
+          (prev) =>
+            prev ?? {
+              live: false,
+              phase: "idle",
+              desk: DESK,
+              txs: {},
+              deskShares: 1,
+              paulShares: 0,
+            },
+        );
         setError("desk unread");
       });
   }, []);

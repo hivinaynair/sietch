@@ -5,6 +5,7 @@
  * Policy clauses are never modelled, only their hashes. See
  * docs/plans/2026-08-15-sietch-design.md §4 (threat model) and §8 (guest I/O).
  */
+import artifact from "../../../../../artifacts/demo/chain.json";
 import { CLIP_TX } from "./chain";
 import type { Phase } from "./clip";
 import {
@@ -27,11 +28,11 @@ export const NETWORK = "Base Sepolia · 84532";
 export const PROGRAM_VKEY = ARTIFACT_VKEY;
 
 /** Succinct's canonical Groth16 gateway on Base Sepolia. We call it; we do not deploy one. */
-export const VERIFIER_GATEWAY = "0x397A5f7f3dBd538f23DE225B51f532c34448dA9B";
+export const VERIFIER_GATEWAY = artifact.gateway;
 
 /** Live desk from artifacts/demo/chain.json. Share posts to 0x2222…, not a customer wallet. */
-export const DESK = "0xF94822401F3DdEC9e53c4143A4eFEdF61488dFA7";
-export const TBILL = "0x66DD7896EAec4Bf7Dc41f3Ad259F6b69e36e7984";
+export const DESK = artifact.desk;
+export const TBILL = artifact.tbill;
 
 /** Cycle count of one execute. Tiny on purpose — this is a policy check, not a workload. */
 export const EXECUTE_CYCLES = 25_521;

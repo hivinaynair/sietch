@@ -1,9 +1,14 @@
 import { expect, test } from "bun:test";
-import { CLIP_TX } from "./chain";
 import { forbiddenCopy, type Phase } from "./clip";
 import { announcement, beats, ledger, settlement, whatJustHappened } from "./narrative";
 
 const PHASES: Phase[] = ["idle", "pending", "published", "settled"];
+
+const SAMPLE_TX = {
+  settlePending: `0x${"11".repeat(32)}`,
+  publishInboundV2: `0x${"22".repeat(32)}`,
+  settleForPaul: `0x${"33".repeat(32)}`,
+};
 
 test("a beat that has not happened is never labelled as though it had", () => {
   expect(beats("idle").map((b) => b.label)).toEqual([
@@ -34,10 +39,16 @@ test("beats land in order and never un-land", () => {
 
 test("settlement is the AND of the two receipts", () => {
   expect(settlement("idle").outbound.allowed).toBeNull();
-  expect(settlement("pending")).toMatchObject({ tone: "held", tx: CLIP_TX.settlePending });
+  expect(settlement("pending", SAMPLE_TX)).toMatchObject({
+    tone: "held",
+    tx: SAMPLE_TX.settlePending,
+  });
   expect(settlement("pending").outbound.allowed).toBe(true);
   expect(settlement("pending").inbound.allowed).toBe(false);
-  expect(settlement("settled")).toMatchObject({ tone: "settled", tx: CLIP_TX.settleForPaul });
+  expect(settlement("settled", SAMPLE_TX)).toMatchObject({
+    tone: "settled",
+    tx: SAMPLE_TX.settleForPaul,
+  });
   expect(settlement("settled").outbound.allowed).toBe(true);
   expect(settlement("settled").inbound.allowed).toBe(true);
 });
@@ -51,9 +62,9 @@ test("only both-allowed moves the share", () => {
 });
 
 test("publishing v2 does not settle: the pair on chain is still attempt 1", () => {
-  const published = settlement("published");
+  const published = settlement("published", SAMPLE_TX);
   expect(published.tone).toBe("held");
-  expect(published.tx).toBe(CLIP_TX.settlePending);
+  expect(published.tx).toBe(SAMPLE_TX.settlePending);
   expect(published.outbound.historic).toBe(true);
   expect(published.inbound.historic).toBe(true);
   expect(published.footnote).toBeDefined();
