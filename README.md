@@ -1,5 +1,7 @@
 # Sietch
 
+**[Live clip →](https://sietch-plum.vercel.app/)** — default seat is Paul’s institution.
+
 Hidden channels under the sand: two institutions settle a tokenized T-bill so the chain learns only `valid` or `invalid` — not the inbound T-bill policy.
 
 Each institution issues its **own** receipt. Settlement is the AND of both. The network never sees the clauses.
