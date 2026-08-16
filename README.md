@@ -161,4 +161,10 @@ forge test --root contracts
 
 ## Related
 
-**[bare-metal](https://github.com/hivinaynair/metal)** — the companion project, and a different pillar. Bare Metal is compliance enforced **before funds move**: ERC-8004 identity, AP2 mandates, and x402 settlement, with an agent at the center. Sietch is compliance enforced **without disclosure**. Deliberately two projects: the agentic pillar and the institutional-privacy pillar do not share a threat model, and collapsing them into one demo would have muddled both.
+**Bare Metal** (`apps/bare-metal`, [live](https://metal-web.vercel.app/)) — the companion product in this same repo, and a different pillar. Bare Metal is compliance enforced **before funds move**: ERC-8004 identity, AP2 mandates, and x402 settlement, with an agent at the center. Sietch is compliance enforced **without disclosure**. One checkout, two products: the agentic pillar and the institutional-privacy pillar do not share a threat model, and collapsing them into one homepage would muddle both.
+
+```sh
+turbo run dev --filter=bare-metal --filter=agent --filter=facilitator
+```
+
+Bare Metal web is on port 3003. Facilitator is 3001. Agent is 3002. Sietch web stays on 3000.

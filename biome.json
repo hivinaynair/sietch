@@ -12,7 +12,8 @@
       "!**/public",
       "!**/playwright-report",
       "!**/test-results",
-      "!**/packages/db/drizzle"
+      "!**/packages/db/drizzle",
+      "!**/contracts/lib"
     ]
   },
   "formatter": {
@@ -92,6 +93,47 @@
         "rules": {
           "suspicious": {
             "noUndeclaredEnvVars": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/bare-metal/**",
+        "apps/agent/**",
+        "apps/facilitator/**",
+        "packages/metal-db/**",
+        "packages/metal-shared/**",
+        "packages/metal-scripts/**"
+      ],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "recommended": false
+          },
+          "complexity": {
+            "useLiteralKeys": "off",
+            "useOptionalChain": "off"
+          },
+          "correctness": {
+            "noUnusedImports": "off",
+            "useHookAtTopLevel": "off"
+          },
+          "performance": {
+            "noImgElement": "off"
+          },
+          "style": {
+            "noNonNullAssertion": "off",
+            "useConsistentTypeDefinitions": "off",
+            "useNodejsImportProtocol": "off",
+            "useTemplate": "off"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "off",
+            "noConfusingVoidType": "off",
+            "noExplicitAny": "off",
+            "noShadowRestrictedNames": "off",
+            "noSuspiciousSemicolonInJsx": "off"
           }
         }
       }

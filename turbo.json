@@ -5,7 +5,27 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
+      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**", "dist/**"],
+      "env": [
+        "AGENT_URL",
+        "ANTHROPIC_API_KEY",
+        "APP_URL",
+        "ATTESTATION_REGISTRY_ADDRESS",
+        "BOOTSTRAP_SECRET",
+        "CDP_API_KEY_ID",
+        "CDP_API_KEY_SECRET",
+        "CDP_WALLET_SECRET",
+        "DATABASE_URL",
+        "DELEGATOR_PRIVATE_KEY",
+        "FACILITATOR_PRIVATE_KEY",
+        "FACILITATOR_URL",
+        "MANDATE_FILE",
+        "MANDATES_JSON",
+        "PAY_TO_ADDRESS",
+        "POLICY_MAX_AMOUNT_USDC",
+        "EXTERNAL_X402_URL",
+        "METAL_AGENT_SHARED_SECRET"
+      ]
     },
     "//#format-and-lint": {
       "description": "Check for formatting and linting issues"

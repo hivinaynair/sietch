@@ -16,6 +16,10 @@
     "db:generate": "turbo run db:generate --filter=@repo/db",
     "db:migrate": "turbo run db:migrate --filter=@repo/db",
     "db:studio": "turbo run db:studio --filter=@repo/db",
+    "metal:compile-contracts": "bun packages/metal-scripts/compile-contracts.ts",
+    "metal:deploy-contracts": "bun --env-file=packages/metal-scripts/.env.local packages/metal-scripts/deploy-contracts.ts",
+    "metal:fund-wallet": "bun --env-file=packages/metal-scripts/.env.local packages/metal-scripts/fund-wallet.ts",
+    "metal:bootstrap": "bun --env-file=packages/metal-scripts/.env.local packages/metal-scripts/demo-bootstrap/index.ts",
     "preinstall": "bunx only-allow@1.2.2 bun",
     "prepare": "lefthook install || true"
   },

@@ -10,7 +10,6 @@
     "check-types": "SKIP_ENV_VALIDATION=1 next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.7.4",
     "@coinbase/cdp-sdk": "^1.55.0",
     "@repo/db": "workspace:*",
     "@repo/ui": "workspace:*",
@@ -21,7 +20,6 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "viem": "^2.39.0",
-    "workflow": "^4.8.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {

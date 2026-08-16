@@ -1,5 +1,6 @@
 @source "../**/*.{ts,tsx}";
 @source "../../../../apps/web/src/**/*.{ts,tsx}";
+@source "../../../../apps/bare-metal/**/*.{ts,tsx}";
 
 @custom-variant dark (&:is(.dark *));
 
