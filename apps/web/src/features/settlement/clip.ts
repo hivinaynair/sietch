@@ -86,7 +86,7 @@ export function whoseMove(phase: Phase): string {
   return move ? `${seatLabel(move.actor)} to move` : "The room is settled";
 }
 
-/** Whose voice narrates the room right now — the actor who is up, or Paul once it lands. */
+/** Whose move the room is narrating right now — the actor who is up, or Paul once it lands. */
 export function narrator(phase: Phase): Seat {
   return nextMove(phase)?.actor ?? "paul";
 }
@@ -111,10 +111,10 @@ export function seatLabel(seat: Seat): string {
 export function seatCopy(state: { seat: Seat; phase: Phase }): string {
   const lines: Record<Seat, Record<Phase, string>> = {
     chani: {
-      idle: "Instruct my institution to deliver 1 T-bill share to Paul.",
+      idle: "Instruct Chani’s institution to deliver 1 T-bill share to Paul.",
       pending: "My institution allowed; his institution blocked.",
       published:
-        "His institution published inbound T-bill policy v2. Instruct the same delivery again.",
+        "Paul’s institution published inbound T-bill policy v2. Instruct Chani’s institution to deliver the same share again.",
       settled: "Settled for Paul.",
     },
     "chani-institution": {
@@ -127,11 +127,11 @@ export function seatCopy(state: { seat: Seat; phase: Phase }): string {
       idle: "Waiting for a delivery from Chani.",
       pending: "Incoming blocked by my institution.",
       published: "My institution published inbound T-bill policy v2.",
-      settled: "Received. Settled for Paul.",
+      settled: "Paul’s institution posted the share. Settled for Paul.",
     },
     "paul-institution": {
       idle: "Inbound T-bill policy is in force. We have not seen this instruction yet.",
-      pending: "We refused. Settlement pending beneficiary policy.",
+      pending: "Paul’s institution refused. Settlement pending beneficiary policy.",
       published: "Inbound T-bill policy v2 is live.",
       settled: "Allowed; settled on our books for Paul.",
     },
@@ -139,7 +139,11 @@ export function seatCopy(state: { seat: Seat; phase: Phase }): string {
   return lines[state.seat][state.phase];
 }
 
-/** The line the room speaks, in the voice of whoever is up. */
+/**
+ * The line the room says about whoever is up. Every actor is named: with the seat
+ * switcher gone there is no seat for the reader to occupy, so "my institution" or "we"
+ * would have nothing to refer to.
+ */
 export function roomCopy(phase: Phase): string {
   return seatCopy({ seat: narrator(phase), phase });
 }

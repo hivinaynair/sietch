@@ -62,11 +62,21 @@ test("pending evidence names the beneficiary institution, never a stub", () => {
   expect(forbiddenCopy(JSON.stringify(row))).toEqual([]);
 });
 
-test("the room speaks in the voice of whoever is up, and Paul once it lands", () => {
+test("the room narrates whoever is up, and Paul once it lands", () => {
   expect(roomCopy("idle")).toBe(seatCopy({ seat: "chani", phase: "idle" }));
   expect(roomCopy("pending")).toBe(seatCopy({ seat: "paul-institution", phase: "pending" }));
   expect(roomCopy("published")).toBe(seatCopy({ seat: "chani", phase: "published" }));
   expect(roomCopy("settled")).toBe(seatCopy({ seat: "paul", phase: "settled" }));
+});
+
+test("every headline names its actor, because there is no seat to speak from", () => {
+  const phases = ["idle", "pending", "published", "settled"] as const;
+  for (const phase of phases) {
+    const line = roomCopy(phase);
+    expect(line).toMatch(/Chani|Paul/);
+    // First person had a referent only while a seat switcher existed.
+    expect(line).not.toMatch(/\b(my|We|we|our|his|His|her|Her)\b/);
+  }
 });
 
 test("each seat speaks the clip, never payment or cap", () => {
