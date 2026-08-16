@@ -1,11 +1,10 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { createPublicClient, createWalletClient, type Hex, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 import { DEPLOY_BLOCK } from "./chain";
 import type { Phase } from "./clip";
 import { POLICY_HASH_V2, RECEIVER_ORG, TRANSFER_ATTEMPT_2 } from "./clip-artifacts";
+import { groth16Receipt } from "./clip-receipts";
 import { DESK_ABI, TBILL_ABI } from "./desk-abi";
 import {
   type ClipTxes,
@@ -25,8 +24,6 @@ export type ClipRoomState = {
   txs: ClipTxes;
   error?: string;
 };
-
-type ReceiptFile = { proof: string; publicValues: string };
 
 const RPC = process.env.SIETCH_RPC_URL ?? "https://sepolia.base.org";
 
@@ -68,20 +65,6 @@ function deskFromBlock(): bigint {
 
 function publicClient() {
   return createPublicClient({ chain: baseSepolia, transport: http(RPC) });
-}
-
-function receipt(slug: string): ReceiptFile {
-  const file = `${slug}.groth16.json`;
-  const candidates = [
-    join(import.meta.dirname, "../../../../../artifacts/demo", file),
-    join(process.cwd(), "artifacts/demo", file),
-    join(process.cwd(), "../../artifacts/demo", file),
-  ];
-  const path = candidates.find((candidate) => existsSync(candidate));
-  if (!path) {
-    throw new Error(`missing receipt ${file}`);
-  }
-  return JSON.parse(readFileSync(path, "utf8")) as ReceiptFile;
 }
 
 async function readFacts(
@@ -240,8 +223,11 @@ export async function advanceClip(): Promise<ClipRoomState> {
 
 function settleArgs(write: "settle-v1" | "settle-v2"): [Hex, Hex, Hex, Hex] {
   const outbound =
-    write === "settle-v1" ? receipt("chani-outbound") : receipt("chani-outbound-retry");
-  const inbound = write === "settle-v1" ? receipt("paul-inbound-v1") : receipt("paul-inbound-v2");
+    write === "settle-v1"
+      ? groth16Receipt("chani-outbound")
+      : groth16Receipt("chani-outbound-retry");
+  const inbound =
+    write === "settle-v1" ? groth16Receipt("paul-inbound-v1") : groth16Receipt("paul-inbound-v2");
   return [
     outbound.proof as Hex,
     outbound.publicValues as Hex,
