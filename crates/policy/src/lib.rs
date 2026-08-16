@@ -212,6 +212,41 @@ mod tests {
         ));
     }
 
+    /// The v1 seal is not a commitment. `max_amount` is a `u64` and `accepts_cross_border`
+    /// is one bool, so an observer who reads a policy hash off the chain recovers the
+    /// clauses by enumeration. This test **is** the attack, and it passing is the finding:
+    /// nothing in v1 hides what the seal was supposed to hide.
+    ///
+    /// [`policy_commitment`] is the fix — see `blinding_defeats_enumeration`. Wiring it into
+    /// the guest changes the ELF and therefore the vkey, which is why the recorded clip
+    /// still publishes the v1 seal and the README says so out loud.
+    #[test]
+    fn v1_hash_falls_to_enumeration() {
+        let secret = Policy {
+            max_amount: 10,
+            accepts_cross_border: false,
+        };
+        let seal = policy_hash(&secret);
+
+        let mut recovered = None;
+        let mut guesses = 0;
+        for max_amount in 0..=64u64 {
+            for accepts_cross_border in [false, true] {
+                guesses += 1;
+                let guess = Policy {
+                    max_amount,
+                    accepts_cross_border,
+                };
+                if policy_hash(&guess) == seal {
+                    recovered = Some(guess);
+                }
+            }
+        }
+
+        assert_eq!(recovered, Some(secret), "the v1 seal leaks its clauses");
+        assert!(guesses < 200, "and it takes {guesses} guesses to do it");
+    }
+
     #[test]
     fn publishing_inbound_v2_changes_the_hash() {
         let v1 = policy_hash(&Policy {
