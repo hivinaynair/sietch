@@ -30,7 +30,9 @@ contract DeskTest is Test {
             CHANI_INSTITUTION,
             PAUL_INSTITUTION,
             CHANI_HASH,
-            PAUL_V1
+            PAUL_V1,
+            address(0),
+            address(tbill)
         );
         tbill.mint(address(desk), 1);
     }
@@ -108,5 +110,54 @@ contract DeskTest is Test {
     function test_directory_books_are_assigned() public view {
         assertEq(desk.bookOf(CHANI_INSTITUTION), desk.BOOK_INDIA());
         assertEq(desk.bookOf(PAUL_INSTITUTION), desk.BOOK_US());
+    }
+
+    function test_operator_can_publish_inbound() public {
+        address clerk = address(0xCE);
+        Desk operated = new Desk(
+            verifier,
+            VKEY,
+            tbill,
+            CHANI_INSTITUTION,
+            PAUL_INSTITUTION,
+            CHANI_HASH,
+            PAUL_V1,
+            clerk,
+            address(tbill)
+        );
+        vm.prank(clerk);
+        operated.publishInbound(PAUL_V2);
+        assertEq(operated.policyHashOf(PAUL_INSTITUTION), PAUL_V2);
+    }
+
+    function test_stranger_cannot_publish() public {
+        vm.prank(address(0xBAD));
+        vm.expectRevert();
+        desk.publishInbound(PAUL_V2);
+    }
+
+    function test_receipt_token_can_be_the_guest_id() public {
+        address guestToken = address(0x3333333333333333333333333333333333333333);
+        Desk clipDesk = new Desk(
+            verifier,
+            VKEY,
+            tbill,
+            CHANI_INSTITUTION,
+            PAUL_INSTITUTION,
+            CHANI_HASH,
+            PAUL_V1,
+            address(this),
+            guestToken
+        );
+        tbill.mint(address(clipDesk), 1);
+        bytes memory sender = abi.encode(
+            CHANI_HASH, CHANI_INSTITUTION, guestToken, uint256(1), TRANSFER, uint8(0), true
+        );
+        bytes memory receiver = abi.encode(
+            PAUL_V2, PAUL_INSTITUTION, guestToken, uint256(1), TRANSFER, uint8(1), true
+        );
+        clipDesk.publishInbound(PAUL_V2);
+        clipDesk.settle(PROOF, sender, PROOF, receiver);
+        assertEq(tbill.balanceOf(PAUL_INSTITUTION), 1);
     }
 }

@@ -26,6 +26,10 @@ contract Desk {
     TBill public immutable tbill;
     address public immutable sendingInstitution;
     address public immutable beneficiaryInstitution;
+    /// @notice Demo clerk. Production leaves this as address(0); only the beneficiary publishes.
+    address public immutable publisher;
+    /// @notice Token id committed in receipts. May differ from `tbill` (guest used 0x3333… before deploy).
+    address public immutable receiptToken;
 
     mapping(address => uint8) public bookOf;
     mapping(address => bytes32) public policyHashOf;
@@ -53,13 +57,17 @@ contract Desk {
         address sendingInstitution_,
         address beneficiaryInstitution_,
         bytes32 sendingHash,
-        bytes32 inboundHash
+        bytes32 inboundHash,
+        address publisher_,
+        address receiptToken_
     ) {
         verifier = verifier_;
         programVKey = programVKey_;
         tbill = tbill_;
         sendingInstitution = sendingInstitution_;
         beneficiaryInstitution = beneficiaryInstitution_;
+        publisher = publisher_;
+        receiptToken = receiptToken_;
         bookOf[sendingInstitution_] = BOOK_INDIA;
         bookOf[beneficiaryInstitution_] = BOOK_US;
         policyHashOf[sendingInstitution_] = sendingHash;
@@ -67,7 +75,9 @@ contract Desk {
     }
 
     function publishInbound(bytes32 policyHash) external {
-        if (msg.sender != beneficiaryInstitution) revert NotBeneficiary();
+        if (msg.sender != beneficiaryInstitution && msg.sender != publisher) {
+            revert NotBeneficiary();
+        }
         policyHashOf[beneficiaryInstitution] = policyHash;
         emit InboundPolicyPublished(policyHash);
     }
@@ -94,7 +104,7 @@ contract Desk {
         if (sender.org != sendingInstitution || receiver.org != beneficiaryInstitution) {
             revert BadOrg();
         }
-        if (sender.token != address(tbill)) revert BadToken();
+        if (sender.token != receiptToken) revert BadToken();
         if (sender.policyHash != policyHashOf[sendingInstitution]) revert BadHash();
         if (receiver.policyHash != policyHashOf[beneficiaryInstitution]) revert BadHash();
         if (usedTransfer[sender.transferId]) revert Replay();

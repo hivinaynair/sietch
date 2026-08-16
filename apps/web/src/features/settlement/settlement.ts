@@ -6,14 +6,34 @@
  * docs/plans/2026-08-15-sietch-design.md §4 (threat model) and §8 (guest I/O).
  */
 import type { Phase } from "./clip";
+import {
+  PROGRAM_VKEY as ARTIFACT_VKEY,
+  POLICY_HASH_V1,
+  POLICY_HASH_V2,
+  RECEIPT_TOKEN,
+  RECEIVER_ORG,
+  receiptsFor,
+  SENDER_ORG,
+  shorten,
+  TRANSFER_ATTEMPT_1,
+  TRANSFER_ATTEMPT_2,
+} from "./clip-artifacts";
 
 export const NETWORK = "Base Sepolia · 84532";
 
-/** Fingerprint of the guest ELF. From artifacts/demo/chani-outbound.execute.json. */
-export const PROGRAM_VKEY = "0x00035e8be65b2881b5409b3238047ddd679c9cce04cb4140973e04e9ed3330cd";
+/** Fingerprint of the guest ELF. From artifacts/demo/*.groth16.json. */
+export const PROGRAM_VKEY = ARTIFACT_VKEY;
 
 /** Succinct's canonical Groth16 gateway on Base Sepolia. We call it; we do not deploy one. */
 export const VERIFIER_GATEWAY = "0x397A5f7f3dBd538f23DE225B51f532c34448dA9B";
+
+/** Live desk from artifacts/demo/chain.json. Share posts to 0x2222…, not a customer wallet. */
+export const DESK = "0xF94822401F3DdEC9e53c4143A4eFEdF61488dFA7";
+export const TBILL = "0x66DD7896EAec4Bf7Dc41f3Ad259F6b69e36e7984";
+
+const SETTLE_PENDING = "0xc445…8198";
+const PUBLISH_V2 = "0xfe31…417f";
+const SETTLE_FOR_PAUL = "0xcf31…8c27";
 
 /** Cycle count of one execute. Tiny on purpose — this is a policy check, not a workload. */
 export const EXECUTE_CYCLES = 25_521;
@@ -28,15 +48,13 @@ export const DELIVERY = {
   beneficiaryBook: "US",
 } as const;
 
-/**
- * Placeholders until Groth16 runs and artifacts/demo/*.groth16.json exists.
- * Only the vkey and the sender's public values above come from a real execute.
- */
-const SENDER_ORG = "0x1111…1111";
-const RECEIVER_ORG = "0x2222…2222";
-const TOKEN = "0x3333…3333";
-const TRANSFER_ATTEMPT_1 = "0x4444…4444";
-const TRANSFER_ATTEMPT_2 = "0x7c1a…9e02";
+const TOKEN = shorten(RECEIPT_TOKEN);
+const ORG_SEND = shorten(SENDER_ORG);
+const ORG_RECV = shorten(RECEIVER_ORG);
+const ATTEMPT_1 = shorten(TRANSFER_ATTEMPT_1);
+const ATTEMPT_2 = shorten(TRANSFER_ATTEMPT_2);
+const HASH_V1 = shorten(POLICY_HASH_V1);
+const HASH_V2 = shorten(POLICY_HASH_V2);
 
 export type Side = "outbound" | "inbound";
 
@@ -66,7 +84,8 @@ export function receipts(phase: Phase): readonly [Receipt, Receipt] {
   const issued = phase !== "idle";
   const inboundV2 = phase === "published" || settled;
   const attempt = settled ? 2 : 1;
-  const transferId = settled ? TRANSFER_ATTEMPT_2 : TRANSFER_ATTEMPT_1;
+  const transferId = settled ? ATTEMPT_2 : ATTEMPT_1;
+  const pair = receiptsFor(phase);
 
   return [
     {
@@ -74,14 +93,14 @@ export function receipts(phase: Phase): readonly [Receipt, Receipt] {
       sideIndex: 0,
       institution: "Chani’s institution",
       book: DELIVERY.senderBook,
-      org: SENDER_ORG,
+      org: ORG_SEND,
       token: TOKEN,
       amount: DELIVERY.amount,
       policyLabel: "Outbound T-bill policy v1",
-      policyHash: "0x3e9a…3dc4",
+      policyHash: HASH_V1,
       transferId,
       allowed: issued ? true : null,
-      proof: issued ? "0x9f21…a70b" : null,
+      proof: issued ? shorten(pair.outbound.proof) : null,
       attempt,
       superseded: false,
     },
@@ -90,14 +109,14 @@ export function receipts(phase: Phase): readonly [Receipt, Receipt] {
       sideIndex: 1,
       institution: "Paul’s institution",
       book: DELIVERY.beneficiaryBook,
-      org: RECEIVER_ORG,
+      org: ORG_RECV,
       token: TOKEN,
       amount: DELIVERY.amount,
       policyLabel: inboundV2 ? "Inbound T-bill policy v2" : "Inbound T-bill policy v1",
-      policyHash: inboundV2 ? "0xb0d7…41ae" : "0x5c88…d112",
+      policyHash: inboundV2 ? HASH_V2 : HASH_V1,
       transferId,
       allowed: issued ? settled : null,
-      proof: issued ? (settled ? "0x1d40…88fc" : "0xc7be…2201") : null,
+      proof: issued ? shorten(pair.inbound.proof) : null,
       attempt,
       superseded: phase === "published",
     },
@@ -149,25 +168,27 @@ export function history(phase: Phase): readonly Entry[] {
     return [];
   }
 
+  const first = receiptsFor("pending");
+  const second = receiptsFor("settled");
   const attemptOne: Entry[] = [
     { at: "00:00", who: "Chani", what: "Instructed a delivery of 1 share to Paul" },
     {
       at: "00:01",
       who: "Chani’s institution",
       what: "Receipt · side outbound · allowed true",
-      hash: "0x9f21…a70b",
+      hash: shorten(first.outbound.proof),
     },
     {
       at: "00:01",
       who: "Paul’s institution",
       what: "Receipt · side inbound · allowed false",
-      hash: "0xc7be…2201",
+      hash: shorten(first.inbound.proof),
     },
     {
       at: "00:02",
       who: "Desk",
       what: "settle() · no transfer · settlement pending beneficiary policy",
-      hash: "0x0ac3…5b18",
+      hash: SETTLE_PENDING,
       tone: "held",
     },
   ];
@@ -182,7 +203,7 @@ export function history(phase: Phase): readonly Entry[] {
       at: "01:10",
       who: "Paul’s institution",
       what: "Published inbound T-bill policy v2",
-      hash: "0xb0d7…41ae",
+      hash: PUBLISH_V2,
     },
   ];
 
@@ -197,19 +218,19 @@ export function history(phase: Phase): readonly Entry[] {
       at: "01:15",
       who: "Chani’s institution",
       what: "Receipt · side outbound · allowed true",
-      hash: "0x9f21…a70b",
+      hash: shorten(second.outbound.proof),
     },
     {
       at: "01:15",
       who: "Paul’s institution",
       what: "Receipt · side inbound · allowed true",
-      hash: "0x1d40…88fc",
+      hash: shorten(second.inbound.proof),
     },
     {
       at: "01:16",
       who: "Desk",
       what: "settle() · 1 share posted for Paul",
-      hash: "0xe5f9…7d33",
+      hash: SETTLE_FOR_PAUL,
       tone: "settled",
     },
   ];

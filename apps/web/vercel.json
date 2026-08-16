@@ -1,0 +1,3 @@
+{
+  "buildCommand": "cd ../.. && bunx turbo run build --filter=web"
+}

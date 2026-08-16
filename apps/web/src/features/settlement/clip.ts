@@ -1,3 +1,5 @@
+import { CHANI_OUTBOUND, PAUL_INBOUND_V2, PROGRAM_VKEY } from "./clip-artifacts";
+
 export const SEATS = ["chani", "chani-institution", "paul", "paul-institution"] as const;
 export type Seat = (typeof SEATS)[number];
 export type Phase = "idle" | "pending" | "published" | "settled";
@@ -136,16 +138,16 @@ export function evidence(state: ClipState): Evidence {
       senderAllowed: true,
       receiverAllowed: false,
       verdict: "settlement pending beneficiary policy",
-      programVKey: "0x00035e8be65b2881b5409b3238047ddd679c9cce04cb4140973e04e9ed3330cd",
-      publicValues: "0x3e9abaca0aad9ede81f4474766c846d8539f70688e1c8f521bbe1597874e3dc4",
+      programVKey: PROGRAM_VKEY,
+      publicValues: CHANI_OUTBOUND.publicValues,
     };
   }
   return {
     senderAllowed: true,
     receiverAllowed: true,
     verdict: "settled for Paul",
-    programVKey: "0x00035e8be65b2881b5409b3238047ddd679c9cce04cb4140973e04e9ed3330cd",
-    publicValues: "0x3e9abaca0aad9ede81f4474766c846d8539f70688e1c8f521bbe1597874e3dc4",
+    programVKey: PROGRAM_VKEY,
+    publicValues: PAUL_INBOUND_V2.publicValues,
   };
 }
 

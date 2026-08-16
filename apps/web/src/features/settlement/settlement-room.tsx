@@ -15,7 +15,7 @@ import {
 } from "./clip";
 import { InstitutionSlab } from "./institution-slab";
 import { SeatSwitcher } from "./seat-switcher";
-import { DELIVERY, history, NETWORK, PROGRAM_VKEY, receipts, verdict } from "./settlement";
+import { DELIVERY, DESK, history, NETWORK, PROGRAM_VKEY, receipts, verdict } from "./settlement";
 import { Transcript } from "./transcript";
 
 /** Long enough to read as two institutions answering separately, short enough to stay instant. */
@@ -148,6 +148,8 @@ export function SettlementRoom() {
         <div className="mt-10 pb-16">
           <Transcript entries={history(clip.phase)} />
           <p className="mt-5 break-all font-mono text-[11px] text-muted-foreground">
+            desk {DESK}
+            <br />
             vkey {PROGRAM_VKEY}
           </p>
         </div>

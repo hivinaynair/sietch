@@ -1,0 +1,20 @@
+{
+  "network": "base-sepolia",
+  "chainId": 84532,
+  "gateway": "0x397A5f7f3dBd538f23DE225B51f532c34448dA9B",
+  "tbill": "0x66DD7896EAec4Bf7Dc41f3Ad259F6b69e36e7984",
+  "desk": "0xF94822401F3DdEC9e53c4143A4eFEdF61488dFA7",
+  "publisher": "0x2a0E981Ce32242654f10dD05e3259223fc74C024",
+  "beneficiaryInstitution": "0x2222222222222222222222222222222222222222",
+  "paulShares": 1,
+  "deploy": {
+    "tbill": "0x1739beedf0cd9a1cb5a08b4e82e6f09fd46c3478d97bfc615ebe16c68753e90d",
+    "desk": "0x4e2c8646e9afc86a9aa11dc5c859f9894857f0bfe4fde0134a350d2f1d74e78f",
+    "mint": "0xfbebf93203bd1f86333c925280e909870a141694697f37953e1d8ef45c90a42a"
+  },
+  "clip": {
+    "settlePending": "0xc445af618731c604614f36895bc952654cc9fb0548c089824b75624b7f768198",
+    "publishInboundV2": "0xfe31cfdd77f51e14825de3ba71fdf80db452064837c0c7819a0e77dd49a7417f",
+    "settleForPaul": "0xcf3117aa581fef8ba296cd26019ad62bff2f4b058516afc1581f7c537f928c27"
+  }
+}
