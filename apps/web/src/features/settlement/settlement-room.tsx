@@ -2,19 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Channel } from "./channel";
-import {
-  type Action,
-  actionLabel,
-  applyAction,
-  availableAction,
-  createClip,
-  type Seat,
-  seatCopy,
-  setSeat,
-  youAre,
-} from "./clip";
+import { advance, createClip, nextMove, roomCopy, whoseMove } from "./clip";
 import { InstitutionSlab } from "./institution-slab";
-import { SeatSwitcher } from "./seat-switcher";
 import { DELIVERY, DESK, history, NETWORK, PROGRAM_VKEY, receipts, verdict } from "./settlement";
 import { Transcript } from "./transcript";
 
@@ -54,17 +43,12 @@ export function SettlementRoom() {
     return () => window.clearTimeout(timer);
   }, [busy]);
 
-  const seat = useCallback((next: Seat) => setClip((current) => setSeat(current, next)), []);
-
-  const run = useCallback(
-    (next: Action) => {
-      setClip((current) => applyAction(current, next));
-      if (!reduced) {
-        setBusy(true);
-      }
-    },
-    [reduced],
-  );
+  const run = useCallback(() => {
+    setClip(advance);
+    if (!reduced) {
+      setBusy(true);
+    }
+  }, [reduced]);
 
   const reset = useCallback(() => {
     setBusy(false);
@@ -73,8 +57,9 @@ export function SettlementRoom() {
 
   const [outbound, inbound] = receipts(clip.phase);
   const settlement = verdict(clip.phase);
-  const action = availableAction(clip);
-  const onSendingSide = clip.seat === "chani" || clip.seat === "chani-institution";
+  const move = nextMove(clip.phase);
+  /** The column with the move lights up; once settled, the beneficiary holds the share. */
+  const sendingIsUp = move?.actor === "chani" || move?.actor === "chani-institution";
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
@@ -102,47 +87,30 @@ export function SettlementRoom() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1180px] flex-1 px-8 pt-7">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-4 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-6">
-          <SeatSwitcher side="sending" seat={clip.seat} onSeat={seat} />
-          <p className="hidden min-w-[240px] text-center text-[10.5px] text-muted-foreground uppercase tracking-[0.14em] lg:block">
-            seated as
-          </p>
-          <SeatSwitcher side="beneficiary" seat={clip.seat} onSeat={seat} align="right" />
-        </div>
-
+      <main className="mx-auto w-full max-w-[1180px] flex-1 px-8 pt-9">
         <div className="grid items-stretch gap-6 lg:grid-cols-[1fr_auto_1fr]">
           <InstitutionSlab
             receipt={outbound}
-            active={onSendingSide}
+            active={sendingIsUp}
             issuing={busy && clip.phase === "pending"}
           />
-          <Channel phase={clip.phase} busy={busy} />
-          <InstitutionSlab receipt={inbound} active={!onSendingSide} issuing={busy} />
+          <Channel phase={clip.phase} busy={busy} onAdvance={run} />
+          <InstitutionSlab receipt={inbound} active={!sendingIsUp} issuing={busy} align="right" />
         </div>
 
-        <div className="mt-10 flex flex-wrap items-end justify-between gap-8 border-border border-t pt-8">
+        <div className="mt-10 border-border border-t pt-8">
           <div className="max-w-xl">
             <p className="text-[11px] text-muted-foreground uppercase tracking-[0.14em]">
-              {youAre(clip)}
+              {whoseMove(clip.phase)}
             </p>
             <p className="mt-3 font-heading text-[30px] leading-[1.15] tracking-[-0.02em]">
-              {seatCopy(clip)}
+              {roomCopy(clip.phase)}
             </p>
             <p className={`mt-4 text-[13px] ${VERDICT_TONE[settlement.tone]}`} aria-live="polite">
               {settlement.label} · {DELIVERY.amount} {DELIVERY.symbol} · {DELIVERY.sender} →{" "}
               {DELIVERY.beneficiary}
             </p>
           </div>
-
-          <button
-            type="button"
-            disabled={!action || busy}
-            onClick={() => action && run(action)}
-            className="h-11 rounded-full bg-foreground px-6 text-[13.5px] text-background transition disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
-          >
-            {action ? actionLabel(action) : "No action from this seat"}
-          </button>
         </div>
 
         <div className="mt-10 pb-16">

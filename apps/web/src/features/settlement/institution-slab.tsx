@@ -3,8 +3,8 @@
 import type { Receipt } from "./settlement";
 
 const SIDE_LABEL = {
-  outbound: "sending institution",
-  inbound: "beneficiary institution",
+  outbound: "sending side",
+  inbound: "beneficiary side",
 } as const;
 
 /** The policy is present and unreadable. Bars, not clauses — the network sees the hash. */
@@ -39,21 +39,28 @@ function receiptState(receipt: Receipt, issuing: boolean) {
     : { text: "refused", tone: "text-destructive" };
 }
 
+/**
+ * One column per person. Chani and Paul name the ends of the room and are always
+ * both present — there is no seat to hold. The institution is the backing line.
+ */
 export function InstitutionSlab({
   receipt,
   active,
   issuing,
+  align = "left",
 }: {
   receipt: Receipt;
   active: boolean;
   issuing: boolean;
+  align?: "left" | "right";
 }) {
   const state = receiptState(receipt, issuing);
+  const alignment = align === "right" ? "text-right" : "";
 
   return (
     <section
-      aria-label={receipt.institution}
-      className={`flex h-full flex-col justify-between rounded-xl border bg-card px-6 py-6 transition ${
+      aria-label={receipt.person}
+      className={`flex h-full flex-col justify-between rounded-xl border bg-card px-6 py-6 transition ${alignment} ${
         active ? "border-foreground/35 shadow-[0_0_0_3px_var(--primary)]" : "border-border"
       }`}
     >
@@ -61,10 +68,12 @@ export function InstitutionSlab({
         <p className="text-[11px] text-muted-foreground uppercase tracking-[0.14em]">
           {SIDE_LABEL[receipt.side]}
         </p>
-        <h2 className="mt-2 font-heading text-[26px] leading-tight tracking-[-0.02em]">
-          {receipt.institution}
+        <h2 className="mt-2 font-heading text-[34px] leading-tight tracking-[-0.02em]">
+          {receipt.person}
         </h2>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">directory book · {receipt.book}</p>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">
+          {receipt.institution} · directory book {receipt.book}
+        </p>
       </div>
 
       <SealedPolicy label={receipt.policyLabel} hash={receipt.policyHash} />

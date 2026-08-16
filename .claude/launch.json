@@ -6,6 +6,12 @@
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "web-worktree",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd apps/web && ./node_modules/.bin/next dev --port 3100"],
+      "port": 3100
     }
   ]
 }

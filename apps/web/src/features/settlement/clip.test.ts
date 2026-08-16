@@ -1,68 +1,72 @@
 import { expect, test } from "bun:test";
 import {
+  advance,
   applyAction,
   availableAction,
   createClip,
   evidence,
   forbiddenCopy,
+  moveLabel,
+  nextMove,
+  roomCopy,
   seatCopy,
-  setSeat,
-  youAre,
+  whoseMove,
 } from "./clip";
 
-test("default seat is Paul’s institution", () => {
+test("the room opens idle with Chani to move", () => {
   const clip = createClip();
-  expect(clip.seat).toBe("paul-institution");
   expect(clip.phase).toBe("idle");
-  expect(youAre(clip)).toBe("You are Paul’s institution.");
+  expect(nextMove("idle")).toEqual({ actor: "chani", action: "instruct" });
+  expect(whoseMove("idle")).toBe("Chani to move");
 });
 
-test("switching seats does not start a second world", () => {
-  let clip = createClip();
-  clip = applyAction(clip, "instruct");
-  expect(clip.phase).toBe("idle");
-  clip = setSeat(clip, "chani");
-  clip = applyAction(clip, "instruct");
-  expect(clip.phase).toBe("pending");
-  clip = setSeat(clip, "paul");
-  expect(clip.phase).toBe("pending");
+test("one move is open at a time, and it names its actor", () => {
+  expect(nextMove("pending")).toEqual({ actor: "paul-institution", action: "publish" });
+  expect(nextMove("published")).toEqual({ actor: "chani", action: "instruct" });
+  expect(nextMove("settled")).toBeNull();
+  expect(whoseMove("settled")).toBe("The room is settled");
 });
 
-test("only Chani can instruct; only Paul’s institution can publish after deny", () => {
-  let clip = createClip();
-  expect(availableAction(clip)).toBeNull();
-  clip = setSeat(clip, "chani");
+test("the wrong action is refused; only the open one advances the room", () => {
+  const clip = createClip();
   expect(availableAction(clip)).toBe("instruct");
-  clip = applyAction(clip, "instruct");
-  expect(clip.phase).toBe("pending");
-  expect(availableAction(clip)).toBeNull();
-  clip = setSeat(clip, "paul-institution");
-  expect(availableAction(clip)).toBe("publish");
-  clip = setSeat(clip, "chani-institution");
-  expect(availableAction(clip)).toBeNull();
-  clip = applyAction(clip, "publish");
-  expect(clip.phase).toBe("pending");
+  expect(applyAction(clip, "publish").phase).toBe("idle");
+  expect(applyAction(clip, "instruct").phase).toBe("pending");
 });
 
-test("publish then instruct again settles for Paul", () => {
-  let clip = setSeat(createClip(), "chani");
-  clip = applyAction(clip, "instruct");
-  clip = setSeat(clip, "paul-institution");
-  clip = applyAction(clip, "publish");
+test("three presses of the one control: refused, v2, settled", () => {
+  let clip = createClip();
+  clip = advance(clip);
+  expect(clip.phase).toBe("pending");
+  clip = advance(clip);
   expect(clip.phase).toBe("published");
-  clip = setSeat(clip, "chani");
-  clip = applyAction(clip, "instruct");
+  clip = advance(clip);
+  expect(clip.phase).toBe("settled");
+  clip = advance(clip);
   expect(clip.phase).toBe("settled");
 });
 
+test("the control label names who acts on each beat", () => {
+  expect(moveLabel("idle")).toBe("Chani instructs the delivery");
+  expect(moveLabel("pending")).toBe("Paul’s institution publishes inbound v2");
+  expect(moveLabel("published")).toBe("Chani instructs the same delivery");
+  expect(moveLabel("settled")).toBe("Settled for Paul");
+});
+
 test("pending evidence names the beneficiary institution, never a stub", () => {
-  let clip = setSeat(createClip(), "chani");
-  clip = applyAction(clip, "instruct");
-  const row = evidence(clip);
+  const clip = advance(createClip());
+  const row = evidence(clip.phase);
   expect(row.senderAllowed).toBe(true);
   expect(row.receiverAllowed).toBe(false);
   expect(row.verdict).toBe("settlement pending beneficiary policy");
   expect(forbiddenCopy(JSON.stringify(row))).toEqual([]);
+});
+
+test("the room speaks in the voice of whoever is up, and Paul once it lands", () => {
+  expect(roomCopy("idle")).toBe(seatCopy({ seat: "chani", phase: "idle" }));
+  expect(roomCopy("pending")).toBe(seatCopy({ seat: "paul-institution", phase: "pending" }));
+  expect(roomCopy("published")).toBe(seatCopy({ seat: "chani", phase: "published" }));
+  expect(roomCopy("settled")).toBe(seatCopy({ seat: "paul", phase: "settled" }));
 });
 
 test("each seat speaks the clip, never payment or cap", () => {
@@ -84,4 +88,12 @@ test("each seat speaks the clip, never payment or cap", () => {
     /refused|pending beneficiary policy/i,
   );
   expect(seatCopy({ seat: "paul-institution", phase: "settled" })).toMatch(/settled/i);
+});
+
+test("no control label leaks a policy clause", () => {
+  const phases = ["idle", "pending", "published", "settled"] as const;
+  for (const phase of phases) {
+    expect(forbiddenCopy(moveLabel(phase))).toEqual([]);
+    expect(forbiddenCopy(whoseMove(phase))).toEqual([]);
+  }
 });

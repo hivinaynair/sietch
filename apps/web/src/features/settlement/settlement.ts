@@ -62,6 +62,8 @@ export type Receipt = {
   side: Side;
   /** 0 = sender (outbound), 1 = receiver (inbound). Bound in public values so receipts cannot be swapped. */
   sideIndex: 0 | 1;
+  /** The customer this side speaks for. Names the column; the institution backs it. */
+  person: string;
   institution: string;
   book: string;
   org: string;
@@ -91,6 +93,7 @@ export function receipts(phase: Phase): readonly [Receipt, Receipt] {
     {
       side: "outbound",
       sideIndex: 0,
+      person: DELIVERY.sender,
       institution: "Chani’s institution",
       book: DELIVERY.senderBook,
       org: ORG_SEND,
@@ -107,6 +110,7 @@ export function receipts(phase: Phase): readonly [Receipt, Receipt] {
     {
       side: "inbound",
       sideIndex: 1,
+      person: DELIVERY.beneficiary,
       institution: "Paul’s institution",
       book: DELIVERY.beneficiaryBook,
       org: ORG_RECV,

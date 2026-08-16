@@ -1,6 +1,7 @@
 "use client";
 
 import type { Phase } from "./clip";
+import { moveLabel, nextMove, whoseMove } from "./clip";
 import { channelNote } from "./settlement";
 
 const SHARE_POSITION: Record<Phase, string> = {
@@ -11,14 +12,24 @@ const SHARE_POSITION: Record<Phase, string> = {
 };
 
 /**
- * The corridor between the two institutions. The door is the beneficiary's inbound
- * policy: the share sits against it until v2 is in force.
+ * The corridor between Chani and Paul, and the one control that moves the room.
+ * The door is the beneficiary's inbound policy: the share sits against it until
+ * v2 is in force. Pressing the control takes whatever move is open — no seat needed.
  */
-export function Channel({ phase, busy }: { phase: Phase; busy: boolean }) {
+export function Channel({
+  phase,
+  busy,
+  onAdvance,
+}: {
+  phase: Phase;
+  busy: boolean;
+  onAdvance: () => void;
+}) {
   const doorOpen = phase === "published" || phase === "settled";
+  const move = nextMove(phase);
 
   return (
-    <div className="flex min-w-[240px] flex-col items-center justify-center px-2 py-6">
+    <div className="flex min-w-[260px] flex-col items-center justify-center px-2 py-6">
       <p className="text-[11px] text-muted-foreground uppercase tracking-[0.14em]">the channel</p>
 
       <div aria-hidden className="relative mt-6 h-16 w-full">
@@ -45,6 +56,18 @@ export function Channel({ phase, busy }: { phase: Phase; busy: boolean }) {
       </p>
       <p className="mt-1 text-center text-[11px] text-muted-foreground">
         the chain reads two receipts, never the clauses
+      </p>
+
+      <button
+        type="button"
+        disabled={!move || busy}
+        onClick={onAdvance}
+        className="mt-7 h-11 rounded-full border border-transparent bg-foreground px-6 text-[13.5px] text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground"
+      >
+        {moveLabel(phase)}
+      </button>
+      <p className="mt-2.5 text-center text-[11px] text-muted-foreground" aria-live="polite">
+        {whoseMove(phase)}
       </p>
     </div>
   );
