@@ -58,6 +58,6 @@ test("Re-arm asks before spending gas", async () => {
     expect(screen.getByRole("button", { name: "Re-arm" })).toBeTruthy();
   });
   fireEvent.click(screen.getByRole("button", { name: "Re-arm" }));
-  expect(screen.getByText(/spends gas and starts a new desk/i)).toBeTruthy();
+  expect(screen.getByText(/spends gas.*starts a new desk/i)).toBeTruthy();
   expect(calls.some((url) => url.includes("/api/clip/rearm"))).toBe(false);
 });

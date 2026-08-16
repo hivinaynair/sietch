@@ -26,8 +26,9 @@ contract RearmScript is Script {
 
         vm.startBroadcast(pk);
         ClipFactory factory;
+        uint256 tank = clerk.balance > 0.01 ether ? 0.005 ether : 0;
         if (existing == address(0)) {
-            factory = new ClipFactory(
+            factory = new ClipFactory{value: tank}(
                 ISP1Verifier(GATEWAY),
                 vkey,
                 CHANI_INSTITUTION,
@@ -37,7 +38,7 @@ contract RearmScript is Script {
                 RECEIPT_TOKEN
             );
         } else {
-            factory = ClipFactory(existing);
+            factory = ClipFactory(payable(existing));
             factory.rearm();
         }
         vm.stopBroadcast();

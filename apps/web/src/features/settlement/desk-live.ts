@@ -4,6 +4,7 @@ import { baseSepolia } from "viem/chains";
 import { DEPLOY_BLOCK } from "./chain";
 import type { Phase } from "./clip";
 import { POLICY_HASH_V2, RECEIVER_ORG, TRANSFER_ATTEMPT_2 } from "./clip-artifacts";
+import { stipendToSend } from "./clip-error";
 import { groth16Receipt } from "./clip-receipts";
 import { DESK_ABI, FACTORY_ABI, TBILL_ABI } from "./desk-abi";
 import {
@@ -299,6 +300,7 @@ export async function rearmClip(): Promise<ClipRoomState> {
     address: factory,
     abi: FACTORY_ABI,
     functionName: "rearm",
+    value: await rearmValue(client, factory, account.address),
   });
   const receipt = await client.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success") {
@@ -307,6 +309,29 @@ export async function rearmClip(): Promise<ClipRoomState> {
   }
 
   return readClipState();
+}
+
+/** Stock the factory tank when the clerk can spare it; rearm() then tops the clerk to CLIP_STIPEND. */
+async function rearmValue(
+  client: ReturnType<typeof publicClient>,
+  factory: `0x${string}`,
+  clerk: `0x${string}`,
+): Promise<bigint> {
+  try {
+    const stipend = await client.readContract({
+      address: factory,
+      abi: FACTORY_ABI,
+      functionName: "CLIP_STIPEND",
+    });
+    const [clerkBal, factoryBal] = await Promise.all([
+      client.getBalance({ address: clerk }),
+      client.getBalance({ address: factory }),
+    ]);
+    const gap = stipendToSend({ stipend, clerk: clerkBal, factory: factoryBal });
+    return gap;
+  } catch {
+    return 0n;
+  }
 }
 
 function settleArgs(write: "settle-v1" | "settle-v2"): [Hex, Hex, Hex, Hex] {

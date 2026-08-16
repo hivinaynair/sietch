@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { formatClipError } from "@/features/settlement/clip-error";
 import { advanceClip, isLive } from "@/features/settlement/desk-live";
 import { advanceLimit } from "@/features/settlement/rate-limit";
 
@@ -23,7 +24,6 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(state);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "settle failed";
-    return NextResponse.json({ live: true, error: message }, { status: 502 });
+    return NextResponse.json({ live: true, error: formatClipError(error) }, { status: 502 });
   }
 }

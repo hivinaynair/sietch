@@ -8,7 +8,10 @@ import {TBill} from "./TBill.sol";
 /// @notice Clerk-owned pointer. rearm() deploys a fresh T-bill + desk so the clip can be walked again.
 ///
 /// Receipts do not bind the desk address, so a new desk restores idle books (1 / 0) without reproving.
+/// ETH sent here is a gas tank: rearm() tops the clerk up to CLIP_STIPEND so settle() can pay verifyProof.
 contract ClipFactory {
+    uint256 public constant CLIP_STIPEND = 0.005 ether;
+
     address public immutable owner;
     ISP1Verifier public immutable verifier;
     bytes32 public immutable programVKey;
@@ -23,6 +26,7 @@ contract ClipFactory {
     uint256 public fromBlock;
 
     error NotOwner();
+    error FundFailed();
 
     event Rearmed(address desk, address tbill, uint256 fromBlock);
 
@@ -34,7 +38,7 @@ contract ClipFactory {
         bytes32 sendingHash_,
         bytes32 inboundHash_,
         address receiptToken_
-    ) {
+    ) payable {
         owner = msg.sender;
         verifier = verifier_;
         programVKey = programVKey_;
@@ -46,7 +50,9 @@ contract ClipFactory {
         _rearm();
     }
 
-    function rearm() external {
+    receive() external payable {}
+
+    function rearm() external payable {
         if (msg.sender != owner) revert NotOwner();
         _rearm();
     }
@@ -69,5 +75,20 @@ contract ClipFactory {
         tbill = address(newTbill);
         fromBlock = block.number;
         emit Rearmed(desk, tbill, fromBlock);
+        _fundClerk();
+    }
+
+    function _fundClerk() internal {
+        uint256 have = owner.balance;
+        if (have >= CLIP_STIPEND) {
+            return;
+        }
+        uint256 gap = CLIP_STIPEND - have;
+        uint256 send = address(this).balance < gap ? address(this).balance : gap;
+        if (send == 0) {
+            return;
+        }
+        (bool ok,) = owner.call{value: send}("");
+        if (!ok) revert FundFailed();
     }
 }

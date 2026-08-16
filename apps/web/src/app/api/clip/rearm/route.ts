@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { formatClipError } from "@/features/settlement/clip-error";
 import { isLive, rearmClip } from "@/features/settlement/desk-live";
 import { rearmLimit, refuseRearm } from "@/features/settlement/rearm";
 
@@ -25,7 +26,6 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(state);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "rearm failed";
-    return NextResponse.json({ live: true, error: message }, { status: 502 });
+    return NextResponse.json({ live: true, error: formatClipError(error) }, { status: 502 });
   }
 }

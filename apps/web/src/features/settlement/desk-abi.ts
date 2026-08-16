@@ -67,8 +67,15 @@ export const DESK_ABI = [
 export const FACTORY_ABI = [
   {
     type: "function",
+    name: "CLIP_STIPEND",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
     name: "rearm",
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     inputs: [],
     outputs: [],
   },

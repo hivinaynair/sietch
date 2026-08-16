@@ -98,7 +98,7 @@ The live page drives a real desk. State lives on chain, so the clip is shared: w
 - **Set `SIETCH_FROM_BLOCK`** to the desk's deploy block. Without it the event scan falls back to the deploy block recorded in `artifacts/demo/chain.json`.
 - **A spent desk stays spent.** There is no recorded replay. Re-arm to walk it again.
 - **Re-arm** deploys a **new** `TBill` and `Desk`, mints 1 share onto the desk, and stores the pointer on `ClipFactory`. Receipts bind vkey, orgs, token id, policy seals and transfer ids — **not** the desk address — so a new desk restores the clip without reproving. A new token is required because reusing the previous sTBILL would leave shares on Paul’s institution, so idle books would already show Paul holding.
-  - **On the live page:** **Re-arm** (next to Refresh) confirms “this spends gas and starts a new desk,” then `POST /api/clip/rearm` calls `factory.rearm()`. The room refetches; books should read 1 on the desk and 0 on Paul. Refresh only re-reads chain — it does not rotate a spent desk.
+  - **On the live page:** **Re-arm** (next to Refresh) confirms “this spends gas, tops the clerk to 0.005 ETH, and starts a new desk,” then `POST /api/clip/rearm` calls `factory.rearm()`. The factory tops the clerk from its ETH tank so the next instruct can pay `verifyProof`. Books should read 1 on the desk and 0 on Paul. Refresh only re-reads chain — it does not rotate a spent desk.
   - **From this machine:** `bun run rearm` deploys the factory once, then later calls `rearm()` on it. Set `SIETCH_FACTORY_ADDRESS` on the web app (and Vercel) **once**. After that, website re-arm needs no env bump and no redeploy. **Do not walk the desk** until the Loong demo.
 
 ## Reproducing the proofs

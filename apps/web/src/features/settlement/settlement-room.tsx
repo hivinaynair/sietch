@@ -6,6 +6,7 @@ import { booksFor } from "./books";
 import { addressUrl } from "./chain";
 import { Channel } from "./channel";
 import { type Action, availableAction, nextMove } from "./clip";
+import { formatClipError } from "./clip-error";
 import type { ClipTxes } from "./desk-phase";
 import { type Activity, InstitutionSlab } from "./institution-slab";
 import { KnownLimits } from "./known-limits";
@@ -64,7 +65,7 @@ export function SettlementRoom({ initial }: { initial?: RoomState }) {
       .then((state) => {
         setLive(state);
         if (state.error) {
-          setError(state.error);
+          setError(formatClipError(state.error));
         }
       })
       .catch(() => {
@@ -100,7 +101,7 @@ export function SettlementRoom({ initial }: { initial?: RoomState }) {
     const res = await fetch("/api/clip/advance", { method: "POST" }).catch(() => undefined);
     let body = (await res?.json().catch(() => undefined)) as Partial<RoomState> | undefined;
     if (!res?.ok || !body) {
-      setError(body?.error ?? "settle() did not land");
+      setError(formatClipError(body?.error ?? "settle() did not land"));
       setInFlight(null);
       return;
     }
@@ -134,7 +135,7 @@ export function SettlementRoom({ initial }: { initial?: RoomState }) {
     const res = await fetch("/api/clip/rearm", { method: "POST" }).catch(() => undefined);
     const body = (await res?.json().catch(() => undefined)) as Partial<RoomState> | undefined;
     if (!res?.ok || !body) {
-      setError(body?.error ?? "rearm() did not land");
+      setError(formatClipError(body?.error ?? "rearm() did not land"));
       setInFlight(null);
       return;
     }
@@ -196,7 +197,7 @@ export function SettlementRoom({ initial }: { initial?: RoomState }) {
               confirmRearm ? (
                 <span className="flex flex-wrap items-center gap-3">
                   <span className="text-[12px] text-muted-foreground">
-                    This spends gas and starts a new desk.
+                    This spends gas, tops the clerk to 0.005 ETH, and starts a new desk.
                   </span>
                   <button
                     type="button"
@@ -277,7 +278,7 @@ export function SettlementRoom({ initial }: { initial?: RoomState }) {
             />
 
             {error && !(phase === "settled" && error === "already settled") ? (
-              <p className="mt-4 text-[13px] text-destructive" aria-live="polite">
+              <p className="mt-4 max-w-xl text-[13px] text-destructive" aria-live="polite">
                 {error}
               </p>
             ) : null}

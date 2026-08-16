@@ -8,6 +8,8 @@ import {TBill} from "../src/TBill.sol";
 import {MockVerifier} from "../src/MockVerifier.sol";
 
 contract ClipFactoryTest is Test {
+    receive() external payable {}
+
     address constant CHANI_INSTITUTION = address(0x1111111111111111111111111111111111111111);
     address constant PAUL_INSTITUTION = address(0x2222222222222222222222222222222222222222);
     address constant RECEIPT_TOKEN = address(0x3333333333333333333333333333333333333333);
@@ -59,5 +61,29 @@ contract ClipFactoryTest is Test {
         vm.prank(address(0xdead));
         vm.expectRevert(ClipFactory.NotOwner.selector);
         factory.rearm();
+    }
+
+    function test_rearm_tops_the_clerk_up_to_the_stipend() public {
+        vm.deal(address(this), 0);
+        vm.deal(address(factory), 0.01 ether);
+        factory.rearm();
+        assertEq(address(this).balance, 0.005 ether);
+        assertEq(address(factory).balance, 0.005 ether);
+    }
+
+    function test_rearm_does_not_overfill_a_funded_clerk() public {
+        vm.deal(address(this), 0.005 ether);
+        vm.deal(address(factory), 0.01 ether);
+        factory.rearm();
+        assertEq(address(this).balance, 0.005 ether);
+        assertEq(address(factory).balance, 0.01 ether);
+    }
+
+    function test_rearm_sends_whatever_the_factory_has_if_short() public {
+        vm.deal(address(this), 0);
+        vm.deal(address(factory), 0.001 ether);
+        factory.rearm();
+        assertEq(address(this).balance, 0.001 ether);
+        assertEq(address(factory).balance, 0);
     }
 }
