@@ -85,6 +85,28 @@ pub fn policy_hash(policy: &Policy) -> [u8; 32] {
     out
 }
 
+/// Hiding commitment to one institution's clauses: `keccak(blinding ‖ policy_bytes)`.
+///
+/// [`policy_hash`] — what the recorded clip actually publishes — is unsalted keccak over 64
+/// bytes holding a `u64` and a bool. That domain enumerates in well under 200 guesses, so the
+/// v1 seal reveals the clauses it was meant to hide (`v1_hash_falls_to_enumeration`).
+///
+/// `blinding` is a per-institution, per-version secret carried in stdin beside the policy. It
+/// never reaches the chain, so the commitment stays opaque even though the clause space is
+/// tiny — and two institutions holding byte-identical clauses no longer publish the same seal.
+///
+/// **Deliberately not wired into the guest.** Switching `policy_hash` for this changes the
+/// guest ELF and therefore the verification key, which would invalidate the four committed
+/// Groth16 receipts. README "Known limits" records that as the one-reprove fix.
+pub fn policy_commitment(policy: &Policy, blinding: &[u8; 32]) -> [u8; 32] {
+    let mut hasher = Keccak::v256();
+    hasher.update(blinding);
+    hasher.update(&policy_bytes(policy));
+    let mut out = [0u8; 32];
+    hasher.finalize(&mut out);
+    out
+}
+
 /// `org` must already be in `directory`. Home is looked up, never taken from `policy`.
 pub fn evaluate(
     policy: &Policy,
@@ -108,7 +130,7 @@ pub fn evaluate(
 #[cfg(test)]
 mod tests {
     use super::{
-        evaluate, policy_hash, Book, Delivery, Directory, OrgId, Policy, Side,
+        evaluate, policy_commitment, policy_hash, Book, Delivery, Directory, OrgId, Policy, Side,
         CHANI_INSTITUTION, PAUL_INSTITUTION,
     };
     use pretty_assertions::{assert_eq, assert_ne};
@@ -119,41 +141,11 @@ mod tests {
     }
 
     #[rstest]
-    #[case::chani_sends_from_her_book(
-        Side::Outbound,
-        CHANI_INSTITUTION,
-        Book::India,
-        false,
-        true
-    )]
-    #[case::chani_cannot_attest_us(
-        Side::Outbound,
-        CHANI_INSTITUTION,
-        Book::Us,
-        false,
-        false
-    )]
-    #[case::paul_v1_blocks_cross_border(
-        Side::Inbound,
-        PAUL_INSTITUTION,
-        Book::India,
-        false,
-        false
-    )]
-    #[case::paul_v2_opens_cross_border(
-        Side::Inbound,
-        PAUL_INSTITUTION,
-        Book::India,
-        true,
-        true
-    )]
-    #[case::paul_v1_still_takes_domestic(
-        Side::Inbound,
-        PAUL_INSTITUTION,
-        Book::Us,
-        false,
-        true
-    )]
+    #[case::chani_sends_from_her_book(Side::Outbound, CHANI_INSTITUTION, Book::India, false, true)]
+    #[case::chani_cannot_attest_us(Side::Outbound, CHANI_INSTITUTION, Book::Us, false, false)]
+    #[case::paul_v1_blocks_cross_border(Side::Inbound, PAUL_INSTITUTION, Book::India, false, false)]
+    #[case::paul_v2_opens_cross_border(Side::Inbound, PAUL_INSTITUTION, Book::India, true, true)]
+    #[case::paul_v1_still_takes_domestic(Side::Inbound, PAUL_INSTITUTION, Book::Us, false, true)]
     fn evaluate_one_institution(
         #[case] side: Side,
         #[case] org: OrgId,
@@ -166,10 +158,7 @@ mod tests {
             accepts_cross_border,
         };
         let delivery = Delivery { amount: 1, origin };
-        assert_eq!(
-            evaluate(&policy, &delivery, side, &demo(), org),
-            allowed
-        );
+        assert_eq!(evaluate(&policy, &delivery, side, &demo(), org), allowed);
     }
 
     #[test]
@@ -245,6 +234,57 @@ mod tests {
 
         assert_eq!(recovered, Some(secret), "the v1 seal leaks its clauses");
         assert!(guesses < 200, "and it takes {guesses} guesses to do it");
+    }
+
+    /// The same sweep that breaks v1, run against the blinded commitment. No guess lands,
+    /// because the guess does not hold the blinding factor.
+    #[test]
+    fn blinding_defeats_enumeration() {
+        let secret = Policy {
+            max_amount: 10,
+            accepts_cross_border: false,
+        };
+        let sealed = policy_commitment(&secret, &[7u8; 32]);
+
+        for max_amount in 0..=64u64 {
+            for accepts_cross_border in [false, true] {
+                let guess = Policy {
+                    max_amount,
+                    accepts_cross_border,
+                };
+                assert_ne!(policy_commitment(&guess, &[0u8; 32]), sealed);
+            }
+        }
+    }
+
+    /// Republishing has to move the seal even when the clauses are unchanged, or the version
+    /// history tells an observer which publishes were substantive.
+    #[test]
+    fn same_policy_two_versions_two_commitments() {
+        let policy = Policy {
+            max_amount: 10,
+            accepts_cross_border: false,
+        };
+        assert_ne!(
+            policy_commitment(&policy, &[1u8; 32]),
+            policy_commitment(&policy, &[2u8; 32])
+        );
+    }
+
+    /// The clip shows one seal under both institutions because both v1 policies are
+    /// byte-identical and v1 is unsalted. Per-institution blinding is what stops that,
+    /// and stops the chain learning that two institutions agree.
+    #[test]
+    fn two_institutions_never_share_a_commitment() {
+        let identical = Policy {
+            max_amount: 10,
+            accepts_cross_border: false,
+        };
+        assert_eq!(policy_hash(&identical), policy_hash(&identical));
+        assert_ne!(
+            policy_commitment(&identical, &[0xAA; 32]),
+            policy_commitment(&identical, &[0xBB; 32])
+        );
     }
 
     #[test]
