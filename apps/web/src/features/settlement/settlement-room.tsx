@@ -12,7 +12,7 @@ import { type Activity, InstitutionSlab } from "./institution-slab";
 import { KnownLimits } from "./known-limits";
 import { announcement } from "./narrative";
 import { PrivacyLedger } from "./privacy-ledger";
-import { DELIVERY, DESK, history, NETWORK, PROGRAM_VKEY, receipts } from "./settlement";
+import { DESK, history, NETWORK, PROGRAM_VKEY, receipts } from "./settlement";
 import { Transcript } from "./transcript";
 import { VerdictBand } from "./verdict-band";
 
@@ -236,14 +236,7 @@ export function SettlementRoom({ initial }: { initial?: RoomState }) {
       </p>
 
       <main className="mx-auto w-full max-w-[1180px] flex-1 px-8 pt-8 pb-16">
-        <p className="text-[13px] text-muted-foreground">
-          {DELIVERY.amount} {DELIVERY.symbol} · {DELIVERY.sender} ({DELIVERY.senderBook}) →{" "}
-          {DELIVERY.beneficiary} ({DELIVERY.beneficiaryBook})
-        </p>
-
-        <div className="mt-6">
-          <BeatSpine phase={phase} />
-        </div>
+        <BeatSpine phase={phase} />
 
         {/*
          * On a phone the room is three screens tall, so source order would bury the one
