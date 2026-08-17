@@ -253,7 +253,6 @@ sietch/
   packages/db/           optional later; v1 can be static proof artifacts
   crates/policy-guest/   SP1 program (Rust) — one ELF, two executes
   crates/prove/          SP1 script: execute / groth16 / write artifacts (isolated stdin)
-  apps/modal/            One-shot Modal prove box (user hi-83670, app sietch-prove, not thumper-worker)
   contracts/             Foundry: TBill.sol, Desk.sol (settle two receipts + publish)
   artifacts/demo/        committed publicValues + proof bytes + tx hashes for the URL
   docs/plans/            this file

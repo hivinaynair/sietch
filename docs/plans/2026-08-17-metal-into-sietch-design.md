@@ -25,7 +25,7 @@ Sietch and Bare Metal are two Metal-inspired pillars with different threat model
 | `contracts/*.sol` + `artifacts/` | `contracts/metal/` | Foundry `src = "src"`, so forge will not compile these. |
 | `scripts/` | `packages/metal-scripts` | `@repo/metal-scripts`. Avoids colliding with root `scripts/`. |
 
-Sietch `apps/web`, `apps/modal`, `@repo/db`, `@repo/ui`, and Foundry `contracts/src` are untouched.
+Sietch `apps/web`, `@repo/db`, `@repo/ui`, and Foundry `contracts/src` are untouched.
 
 ## 3. Wiring
 

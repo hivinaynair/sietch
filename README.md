@@ -1,60 +1,115 @@
 # Sietch
 
-**Two institutions settle a tokenized T-bill. Each proves its own policy allowed it. The chain verifies both receipts and moves the share — without either institution's rulebook being transmitted.**
+**Paul** is a customer of a US institution. **Chani** is a customer of an institution in India.
 
-**[Live clip →](https://sietch-plum.vercel.app/)**
+Chani instructed her institution to deliver a tokenized T-bill share to Paul. Her institution allowed it. The share did not land on Paul’s books.
 
-> Unofficial project inspired by Metal's public thesis. Not affiliated with, endorsed by, or reviewed by Metal.
+The delay was not the rail. It was Paul’s institution’s inbound T-bill policy: a jurisdiction label and a stub clause, not real FEMA/OFAC. The public may see which institution refused. It must not see that stub. There is no reason field. That would tell an observer which clause fired.
 
-Not a chain. A stand-in for inter-institutional settlement: a Next.js settlement room plus a tiny SP1 policy guest — **one program, two executes** — verified through Succinct's canonical Groth16 gateway on Base Sepolia.
+That is [Metal’s sentence](https://metalntwx.com/blog/hello-metal/): when a delivery does not settle instantly, it is often the beneficiary institution’s policy, and an ideal chain lets institutions enforce that as part of settlement without the network seeing the clauses. The usual answer is a private subnet. The operators see everything. That is the hole.
 
-Read the four **[Known limits](#known-limits)** before the claims. They are on the live page too.
+This checkout is two stand-ins, two products, one desk. Not one homepage.
+
+**[Walk the clip →](https://sietch-plum.vercel.app/)** · **[Then the agent →](https://metal-web.vercel.app/)**
+
+> Unofficial work, inspired by Metal’s public thesis. Not affiliated with, endorsed by, or reviewed by Metal.
+
+Read the four **[Known limits](#known-limits)** before the claims. They are on the live clip too.
 
 ---
 
-## The problem this is aimed at
+## The delivery
 
-When funds don't settle instantly, the delay often isn't the rails — it's the AML and fraud policy of the *beneficiary's* institution. So an institution's policy has to run as part of settlement. But if policy runs on-chain, the network processes your policy logic, and the usual answer is a private subnet run by a small operator set — where **the operators can see everything**.
+Four actors. Chani. Her sending institution. Paul. His beneficiary institution. The thing moving is a toy ERC-20 T-bill share. It starts on a desk on Base Sepolia, not on Paul’s books.
 
-Sietch answers exactly that: policy enforced at settlement, with no operator who reads both rulebooks.
-
-## Two receipts, one settlement
-
-One guest program. It runs **twice** per settlement, once per institution. Each run's private input is **only that institution's** policy.
-
-```
-Chani's institution          Paul's institution
-  outbound policy              inbound policy
-       │                            │
-   execute #1                  execute #2        ← separate stdin, separate receipt
-       │                            │
-   receipt A                    receipt B
-       └──────────┬─────────────────┘
-              settle()
-        verifyProof(A) ∧ verifyProof(B)
-                  │
-        both allowed? move the share : emit and stop
+```mermaid
+flowchart TB
+  subgraph people["Customers"]
+    C["Chani · India"]
+    P["Paul · US"]
+  end
+  subgraph inst["Institutions"]
+    CI["Chani's sending institution"]
+    PI["Paul's beneficiary institution"]
+  end
+  C --- CI
+  P --- PI
 ```
 
-The isolation is **mechanical, not narrated**. Stdin is a fixed 146-byte buffer (`STDIN_LEN`, `crates/policy-guest`). Concatenating two policies is `2 × STDIN_LEN` and fails to decode. A test helper cannot quietly hand the guest both rulebooks.
+Chani instructs. Each institution issues a **receipt**: a proof that its own inbound or outbound T-bill policy allowed or refused this delivery. One from Chani’s institution, one from Paul’s. `settle()` is the desk contract on Base Sepolia. It checks both receipts in a single transaction and moves the share only if both allowed. Chani’s institution allowed. Paul’s institution refused. The share stays on the desk. Settlement did not complete. It is waiting on the beneficiary: Paul’s institution, and its inbound T-bill policy. The page names that **settlement pending beneficiary policy**. It does not say which clause refused.
 
-`side` (outbound = 0, inbound = 1) is bound in the public values, so a sender receipt cannot be replayed as a receiver receipt. `transferId` is consumed once, so a passing pair cannot move the share twice.
+Paul’s institution publishes inbound T-bill policy v2. Not Paul. A version is not a settlement. The refusal stays on the transcript. History is not rewritten.
 
-### What settlement disclosed
+Chani instructs the **same** delivery again. New transfer id. Both institutions allow. The share posts for Paul. **Settled for Paul.**
 
-Two booleans (outbound allowed, inbound allowed) · two policy seals · both institutions, the token, the amount · one transfer id per attempt · that both receipts verified for this vkey.
+```mermaid
+sequenceDiagram
+  actor Chani
+  participant Send as Chani institution
+  participant Desk
+  participant Recv as Paul institution
+  actor Paul
 
-### What stayed off the wire
+  Chani->>Send: instruct delivery to Paul
+  Send->>Desk: outbound allowed
+  Recv->>Desk: inbound refused
+  Desk-->>Paul: pending beneficiary policy
 
-The other institution's policy — one policy per stdin, never both · which clause refused the delivery, since the desk emits **no reason field** · the clauses in bytes; only their seals were transmitted.
+  Recv->>Desk: publish inbound v2
 
-**Withheld from the wire is not the same as hidden.** See the first known limit.
+  Chani->>Send: instruct the same delivery
+  Send->>Desk: outbound allowed
+  Recv->>Desk: inbound allowed
+  Desk->>Paul: settled for Paul
+```
+
+After those three beats: a delivery Chani’s institution allows can still fail to reach Paul. The chain does not print either institution’s inbound or outbound T-bill policy. Only Paul’s institution publishes v2. Then it settles for Paul. A model never decided this.
+
+---
+
+## Why two receipts
+
+A subnet with one operator who reads both inbound and outbound T-bill policies recreates the hole. So one guest program runs **twice**. Each run’s private input is only that institution’s policy. Never both in one prover. Same program, isolated input. The desk verifies both receipts and moves the share only if both allowed.
+
+```mermaid
+flowchart TB
+  CI["Chani's institution<br/>outbound T-bill policy"]
+  PI["Paul's institution<br/>inbound T-bill policy"]
+  CI --> E1["execute #1 · stdin A"]
+  PI --> E2["execute #2 · stdin B"]
+  E1 --> RA["receipt A"]
+  E2 --> RB["receipt B"]
+  RA --> S["settle()"]
+  RB --> S
+  S --> V{"verifyProof A ∧ verifyProof B"}
+  V -->|both allowed| M["move the share"]
+  V -->|either refused| X["emit and stop"]
+```
+
+The guest is a tiny program. On each run it is handed **one** institution’s policy as private input. That slot is a fixed 146-byte buffer (`STDIN_LEN` in `crates/policy-guest`). Exactly one policy fits. Glue Chani’s and Paul’s together and the guest fails to decode. Isolation is that size check, not a promise in a comment.
+
+Each receipt also names its **side** (outbound or inbound) in the public values, so Chani’s allow cannot be submitted as Paul’s. Each `transferId` can settle once, so a passing pair cannot move the share twice.
+
+Making a receipt is the expensive step. Checking one is cheap. Groth16 proving wants a fat x86 machine: Docker, 32GB of RAM. A laptop is the wrong box, and the public page should not wait on a prover. So the four receipts this clip needs were generated **ahead of time** on a throwaway Vultr VM, with Docker wrapping locally. The JSON was copied into `artifacts/demo/`, then the instance was destroyed. Sietch does not run on Vultr. That box was a printer.
+
+- Chani outbound, first instruct (allowed)
+- Paul inbound v1 (refused)
+- Chani outbound, second instruct (allowed)
+- Paul inbound v2 (allowed)
+
+Those files are the stamps. The live page never proves. It sends the two stamps for the current beat to Succinct’s Groth16 gateway on Base Sepolia (`verifyProof`, twice), then the desk transfers or stops. That check is what **instant** means. SP1 is a stand-in for a chain-native verifier. Sietch is not a blockchain. It is a settlement room plus this guest, verified on Base Sepolia.
+
+What the chain **does** see: whether each side allowed, a seal of each policy, both institutions, the token, the amount, the transfer id, and that both receipts verified for this program.
+
+What it **does not** see: the other institution’s clauses, which clause refused (there is no reason field), the bytes of the policy.
+
+Withheld from the chain is not the same as hidden. The v1 seal is enumerable: see the first known limit. Zero-knowledge here means the chain learns those public values and that they came from this guest. Parties and amount can stay public. The question is the policy paragraph, not hiding that a delivery happened.
 
 ---
 
 ## Known limits
 
-The same four stubs as the live page.
+The same four stubs as the live page. The clip tells the story. These four lines keep it honest.
 
 ### The v1 seal is enumerable
 
@@ -72,21 +127,93 @@ One clerk signs both calls; two receipts, one machine. Stdin is 146 bytes; a dec
 
 Four receipts were generated ahead of time; this page does not prove. Instant means two `verifyProof` calls, roughly 540k gas.
 
+Two verifies per settlement, ~270k gas each, so **~540k gas plus the transfer**. That is the honest number for an application contract. It does not reach millions of transactions per second, or a cent or less per call. The gap is the argument. Fold both receipts into one proof and settlement pays one verify. Put a native verifier in the protocol and the same primitive is roughly a signature check. A policy check that costs 540k gas above the chain will not carry institutional volume. That is why this demo stops where it stops, and why the interesting version lives in the settlement layer itself.
+
 ---
 
-## What this would cost, and why it belongs lower in the stack
+## The agent
 
-Two `verifyProof` calls per settlement, ~270k gas each, so **~540k gas plus the transfer**. As an application contract, that is the honest number, and it does not reach "millions of transactions per second" or "a cent or less per call".
+That was one story: two institutions, two receipts, the network does not get the book.
 
-That gap is the argument, not an omission. Three ways to close it, in increasing order of how much chain you need to own:
+The other product in this checkout is **Bare Metal**. Same type, same components. A different question. [Live](https://metal-web.vercel.app/).
 
-| Approach | Cost per settlement | Needs |
-|---|---|---|
-| Two verifies in an app contract (**this repo**) | ~540k gas | nothing — works today on Base Sepolia |
-| Recursive aggregation: both institutions' receipts folded into one proof | ~270k gas, one verify | a proving pipeline; the guest is unchanged |
-| Native verifier precompile + policy receipts in the protocol | amortised toward a signature check | your own chain |
+An agent, carrying a mandate from its institution, tries to settle through x402 for a small USDC resource. Metal’s ideology here is the order: do not move funds until the gates pass. This repo includes a facilitator that checks identity (ERC-8004), the mandate (AP2), and a policy, then settles, then attests. First failure aborts.
 
-The third row is the interesting one, and it is only available to someone building the settlement layer itself. A policy primitive that has to pay 540k gas to an application contract will not carry institutional volume; the same primitive verified natively is roughly a signature check. **That is the case for putting programmable private policy in the chain rather than above it** — and it is the reason this demo stops where it stops.
+```mermaid
+flowchart LR
+  I["Identity"] --> M["Mandate"]
+  M --> P["Policy"]
+  P --> S["Settlement"]
+  S --> A["Attestation"]
+  I -.-> X["first failure aborts"]
+  M -.-> X
+  P -.-> X
+```
+
+This is a lab for that pipeline. It is not Metal’s chain, and it is not the private guest from the clip.
+
+The policy is a USDC ceiling on the Policy page. It lives in Postgres. The check is ordinary code in the facilitator. The chain does not run it. Anyone on that page can see the number. The facilitator must see the number, or it cannot check. If the facilitator is skipped, the ceiling does not bind.
+
+What *is* on chain after a pass is the USDC transfer (public) and a commitment that a decision happened (AttestationRegistryV2). The Feed’s Public view is that commitment and a time. Auditor and Institution views are the decision record off chain. That hides the book from the event. It does not hide the book from the facilitator.
+
+Sietch has no identity in v1. Bare Metal does. Feed, Policy, and Agents are the flight recorder, the ceiling, and who is allowed to spend. They are not the inbound T-bill stub.
+
+Two products so each sentence stays clean. One checkout so both can be walked.
+
+```sh
+turbo run dev --filter=bare-metal --filter=agent --filter=facilitator
+```
+
+Bare Metal web is port **3003**. Facilitator is **3001**. Agent is **3002**. Sietch web stays on **3000**.
+
+---
+
+## What’s in this checkout
+
+```mermaid
+flowchart TB
+  subgraph sietch["Sietch"]
+    web["apps/web · :3000"]
+    guest["crates/policy-guest"]
+    desk["contracts · TBill, Desk, ClipFactory"]
+    web --- guest
+    web --- desk
+  end
+  subgraph metal["Bare Metal"]
+    bm["apps/bare-metal · :3003"]
+    fac["apps/facilitator · :3001"]
+    ag["apps/agent · :3002"]
+    bm --- fac
+    bm --- ag
+  end
+  ui["packages/ui · one desk"]
+  web --- ui
+  bm --- ui
+```
+
+| Path | Role |
+|------|------|
+| `apps/web` | Sietch settlement room |
+| `apps/bare-metal` | Bare Metal Demo / Feed / Policy / Agents |
+| `apps/facilitator` | x402 facilitator + attestation |
+| `apps/agent` | Eve agent |
+| `crates/policy` | Policy evaluation + seals. One institution per call |
+| `crates/policy-guest` | Guest I/O. Fixed-length stdin, one policy |
+| `crates/policy-program` | SP1 zkVM shell around the guest |
+| `crates/prove` | Execute / Groth16 / write artifacts, isolated stdin |
+| `contracts` | Foundry: `TBill.sol`, `Desk.sol`, `ClipFactory.sol` |
+| `contracts/metal` | AttestationRegistry (not on the Foundry `src` path) |
+| `artifacts/demo` | Committed receipts, public values, deployment record |
+| `packages/ui` | shadcn/ui (`@repo/ui`). Never install components into an app |
+| `packages/db` | Sietch Drizzle + Neon (`@repo/db`) |
+| `packages/metal-db` | Bare Metal Drizzle (`@repo/metal-db`). Do not merge |
+| `packages/metal-shared` | Bare Metal types, ABIs, mandate helpers |
+| `packages/metal-scripts` | Compile / deploy / demo bootstrap |
+| `docs/plans` | Design first: [`2026-08-15-sietch-design.md`](docs/plans/2026-08-15-sietch-design.md) |
+
+Features in `apps/web` must not import each other. Compose in `app/`, or hoist to `shared/` / `packages/`. `bun run check-boundaries` enforces that.
+
+**Requires** [Bun](https://bun.sh) `1.4.x`. Installs with anything else will fail (`only-allow bun`).
 
 ---
 
@@ -95,47 +222,23 @@ The third row is the interesting one, and it is only available to someone buildi
 The live page drives a real desk. State lives on chain, so the clip is shared: whoever clicks advances it for everyone.
 
 - **Phase is derived from contract state** (`usedTransfer`, `policyHashOf`), not from a sliding event window, so a settled desk cannot read back as fresh.
-- **Set `SIETCH_FROM_BLOCK`** to the desk's deploy block. Without it the event scan falls back to the deploy block recorded in `artifacts/demo/chain.json`.
+- **Set `SIETCH_FROM_BLOCK`** to the desk’s deploy block. Without it the event scan falls back to the deploy block recorded in `artifacts/demo/chain.json`.
 - **A spent desk stays spent.** There is no recorded replay. Re-arm to walk it again.
-- **Re-arm** deploys a **new** `TBill` and `Desk`, mints 1 share onto the desk, and stores the pointer on `ClipFactory`. Receipts bind vkey, orgs, token id, policy seals and transfer ids — **not** the desk address — so a new desk restores the clip without reproving. A new token is required because reusing the previous sTBILL would leave shares on Paul’s institution, so idle books would already show Paul holding.
-  - **On the live page:** **Re-arm** (next to Refresh) confirms “this spends gas, tops the clerk to 0.005 ETH, and starts a new desk,” then `POST /api/clip/rearm` calls `factory.rearm()`. If the clerk cannot pay gas, the API asks Coinbase’s Base Sepolia faucet (0.0001 ETH) and retries. Uses the same `CDP_API_KEY_ID` / `CDP_API_KEY_SECRET` / `CDP_WALLET_SECRET` as Metal. Books should read 1 on the desk and 0 on Paul. Refresh only re-reads chain — it does not rotate a spent desk.
-  - **From this machine:** `bun run rearm` deploys the factory once, then later calls `rearm()` on it. Set `SIETCH_FACTORY_ADDRESS` on the web app (and Vercel) **once**. After that, website re-arm needs no env bump and no redeploy. **Do not walk the desk** until the Loong demo.
+- **Re-arm** deploys a **new** `TBill` and `Desk`, mints 1 share onto the desk, and stores the pointer on `ClipFactory`. Receipts bind vkey, orgs, token id, policy seals and transfer ids, **not** the desk address, so a new desk restores the clip without reproving. A new token is required because reusing the previous sTBILL would leave shares on Paul’s books.
+  - **On the live page:** **Re-arm** (next to Refresh) confirms “this spends gas, tops the clerk to 0.005 ETH, and starts a new desk,” then `POST /api/clip/rearm` calls `factory.rearm()`. If the clerk cannot pay gas, the API asks Coinbase’s Base Sepolia faucet (0.0001 ETH) and retries. Uses the same `CDP_API_KEY_ID` / `CDP_API_KEY_SECRET` / `CDP_WALLET_SECRET` as Metal. Books should read 1 on the desk and 0 on Paul’s books. Refresh only re-reads chain. It does not rotate a spent desk.
+  - **From this machine:** `bun run rearm` deploys the factory once, then later calls `rearm()` on it. Set `SIETCH_FACTORY_ADDRESS` on the web app (and Vercel) **once**. After that, website re-arm needs no env bump and no redeploy. **Do not walk the desk** until you are ready to show the clip.
 
 ## Reproducing the proofs
 
-`cargo prove` needs the SP1 toolchain (`sp1up`). Local Groth16 wants Docker with ≥16GB. The path this repo used, and the one to prefer:
+`cargo prove` needs the SP1 toolchain (`sp1up`). Local Groth16 wants Docker on an x86 Linux box with about 32GB of RAM. That is how this clip’s four receipts were printed (a throwaway Vultr VM). Execute-only does not need that box:
 
 ```sh
-# Succinct prover network — set NETWORK_PRIVATE_KEY yourself, funded with PROVE
-modal run apps/modal/prove.py           # see apps/modal/README.md
-cargo run --release -p sietch-prove --bin prove-one -- chani-outbound   # execute-only, no proof
+cargo run --release -p sietch-prove --bin prove-one -- chani-outbound
 ```
 
-`cargo run … --bin prove-one` with no network key writes `*.execute.json` (cycle count, public values, `proof: null`) — enough to check the guest without a proving box. One execute is ~25.5k cycles: this is a policy check, not a workload.
+With no Groth16 backend that writes `*.execute.json` (cycle count, public values, `proof: null`). Enough to check the guest. One execute is ~25.5k cycles: this is a policy check, not a workload. Groth16 is `prove-one` on the fat machine with Docker up. Copy the JSON into `artifacts/demo/`. The live page still only verifies.
 
 ---
-
-## Layout
-
-| Path | Role |
-|------|------|
-| `apps/web` | Next.js App Router (`src/app` routes, `src/features/*` domains, `src/shared`) |
-| `crates/policy` | Policy evaluation + seals. One institution per call |
-| `crates/policy-guest` | Guest I/O. Fixed-length stdin, one policy |
-| `crates/policy-program` | SP1 zkVM shell around the guest |
-| `crates/prove` | Execute / Groth16 / write artifacts, isolated stdin |
-| `contracts` | Foundry: `TBill.sol`, `Desk.sol`, `ClipFactory.sol` (pointer + re-arm) |
-| `artifacts/demo` | Committed receipts, public values, and the deployment record |
-| `apps/modal` | One-shot Modal prove box |
-| `packages/ui` | shadcn/ui (`@repo/ui`) — never install components into `apps/web` |
-| `packages/db` | Drizzle ORM + Neon (`@repo/db`) |
-| `tooling/*` | Shared tsconfigs, MSW handlers, feature-folder import rules |
-| `e2e/web` | Playwright for `web` |
-| `docs/plans` | Design and threat model — read `2026-08-15-sietch-design.md` first |
-
-Features must not import each other. Compose in `app/`, or hoist to `shared/` / `packages/`. `bun run check-boundaries` enforces that.
-
-**Requires** [Bun](https://bun.sh) `1.4.x`. Installs with anything else will fail (`only-allow bun`).
 
 ## Commands
 
@@ -156,15 +259,3 @@ export PATH="$HOME/.sp1/bin:$HOME/.foundry/bin:$PATH"
 cargo test --workspace
 forge test --root contracts
 ```
-
----
-
-## Related
-
-**Bare Metal** (`apps/bare-metal`, [live](https://metal-web.vercel.app/)) — the companion product in this same repo, and a different pillar. Bare Metal is compliance enforced **before funds move**: ERC-8004 identity, AP2 mandates, and x402 settlement, with an agent at the center. Sietch is compliance enforced **without disclosure**. One checkout, two products: the agentic pillar and the institutional-privacy pillar do not share a threat model, and collapsing them into one homepage would muddle both.
-
-```sh
-turbo run dev --filter=bare-metal --filter=agent --filter=facilitator
-```
-
-Bare Metal web is on port 3003. Facilitator is 3001. Agent is 3002. Sietch web stays on 3000.
