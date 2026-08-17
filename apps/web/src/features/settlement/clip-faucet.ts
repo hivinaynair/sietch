@@ -1,4 +1,3 @@
-import { CdpClient } from "@coinbase/cdp-sdk";
 import type { Hex } from "viem";
 
 export type Faucet = (address: `0x${string}`) => Promise<{ transactionHash: Hex } | null>;
@@ -41,6 +40,7 @@ export async function requestCdpEth(
   if (!cdpConfigured()) {
     return null;
   }
+  const { CdpClient } = await import("@coinbase/cdp-sdk");
   const cdp = new CdpClient({
     apiKeyId: process.env.CDP_API_KEY_ID,
     apiKeySecret: process.env.CDP_API_KEY_SECRET,

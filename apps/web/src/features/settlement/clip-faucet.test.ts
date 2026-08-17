@@ -2,6 +2,12 @@ import { expect, test } from "bun:test";
 import { parseEther } from "viem";
 import { topUpClerk } from "./clip-faucet";
 
+test("loads the Coinbase SDK only inside the faucet call so Next will not bundle Solana x402", async () => {
+  const src = await Bun.file(new URL("./clip-faucet.ts", import.meta.url)).text();
+  expect(src).not.toContain('from "@coinbase/cdp-sdk"');
+  expect(src).toContain('import("@coinbase/cdp-sdk")');
+});
+
 const CLERK = "0x2a0E981Ce32242654f10dD05e3259223fc74C024" as const;
 
 test("does not call the faucet when the clerk can already pay", async () => {

@@ -4,7 +4,7 @@ import { baseSepolia } from "viem/chains";
 import { DEPLOY_BLOCK } from "./chain";
 import type { Phase } from "./clip";
 import { POLICY_HASH_V2, RECEIVER_ORG, TRANSFER_ATTEMPT_2 } from "./clip-artifacts";
-import { parseHaveWant, stipendToSend } from "./clip-error";
+import { formatClipError, parseHaveWant, stipendToSend } from "./clip-error";
 import { topUpClerk } from "./clip-faucet";
 import { groth16Receipt } from "./clip-receipts";
 import { DESK_ABI, FACTORY_ABI, TBILL_ABI } from "./desk-abi";
@@ -176,25 +176,29 @@ async function readFacts(
 }
 
 export async function readClipState(): Promise<ClipRoomState> {
-  if (!isLive()) {
-    return tape();
-  }
+  try {
+    if (!isLive()) {
+      return tape();
+    }
 
-  const pointer = await deskPointer();
-  if (!pointer) {
-    return tape();
-  }
+    const pointer = await deskPointer();
+    if (!pointer) {
+      return tape();
+    }
 
-  const facts = await readFacts(pointer.desk, pointer.fromBlock);
-  return {
-    live: true,
-    rearmable: isRearmable(),
-    phase: phaseFromDesk(facts),
-    desk: pointer.desk,
-    deskShares: facts.deskShares,
-    paulShares: facts.paulShares,
-    txs: txsFromFacts(facts),
-  };
+    const facts = await readFacts(pointer.desk, pointer.fromBlock);
+    return {
+      live: true,
+      rearmable: isRearmable(),
+      phase: phaseFromDesk(facts),
+      desk: pointer.desk,
+      deskShares: facts.deskShares,
+      paulShares: facts.paulShares,
+      txs: txsFromFacts(facts),
+    };
+  } catch (error) {
+    return tape(formatClipError(error));
+  }
 }
 
 export async function advanceClip(): Promise<ClipRoomState> {

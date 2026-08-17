@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/clip/advance": ["../../artifacts/demo/*.groth16.json"],
   },
+  serverExternalPackages: ["@coinbase/cdp-sdk"],
   transpilePackages: ["@repo/ui", "@splinetool/react-spline", "@splinetool/runtime"],
 };
 

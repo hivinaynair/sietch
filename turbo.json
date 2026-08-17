@@ -24,7 +24,9 @@
         "PAY_TO_ADDRESS",
         "POLICY_MAX_AMOUNT_USDC",
         "EXTERNAL_X402_URL",
-        "METAL_AGENT_SHARED_SECRET"
+        "METAL_AGENT_SHARED_SECRET",
+        "SIETCH_*",
+        "DATABASE_URL_UNPOOLED"
       ]
     },
     "//#format-and-lint": {
