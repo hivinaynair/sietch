@@ -1,12 +1,14 @@
 # Sietch
 
-**Programmable private policy at settlement**. Two institutions each prove, privately, that their own transfer policy allows a delivery. A desk on Base Sepolia moves a tokenized T-bill share only if both receipts allow. The walk below is that delivery.
+> **Programmable private policy at settlement**. Two institutions each prove, privately, that their own transfer policy allows a delivery. A desk on Base Sepolia moves a tokenized T-bill share only if both receipts allow. The walk below is that delivery.
+
+
 
 **Paul** is a customer of a US institution. **Chani** is a customer of an institution in India.
 
 Chani instructed her institution to deliver a tokenized T-bill share to Paul. Her institution allowed it. The share did not land on Paul’s books.
 
-The delay was not the rail. It was Paul’s institution’s inbound policy: a jurisdiction label and a stub clause, not real FEMA/OFAC. The public may see which institution refused. It must not see that stub. There is no reason field, because a reason field would tell an observer which clause fired.
+The delay was not the rail. It was Paul’s institution’s inbound policy: a jurisdiction label and a stub clause. The public may see which institution refused. It must not see that stub. There is no reason field, because a reason field would tell an observer which clause fired.
 
 That is [Metal’s sentence](https://metalntwx.com/blog/hello-metal/): when a delivery does not settle instantly, it is often the beneficiary institution’s policy, and an ideal chain lets institutions enforce that as part of settlement without the network seeing the clauses. The usual answer is a private subnet. The operators see everything. That is the hole.
 
