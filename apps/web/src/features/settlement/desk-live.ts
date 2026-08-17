@@ -1,4 +1,4 @@
-import { createPublicClient, createWalletClient, type Hex, http } from "viem";
+import { createPublicClient, createWalletClient, fallback, type Hex, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 import { DEPLOY_BLOCK } from "./chain";
@@ -7,6 +7,7 @@ import { POLICY_HASH_V2, RECEIVER_ORG, TRANSFER_ATTEMPT_2 } from "./clip-artifac
 import { formatClipError, parseHaveWant, stipendToSend } from "./clip-error";
 import { topUpClerk } from "./clip-faucet";
 import { groth16Receipt } from "./clip-receipts";
+import { clipRpcUrls } from "./clip-rpc";
 import { DESK_ABI, FACTORY_ABI, TBILL_ABI } from "./desk-abi";
 import {
   type ClipTxes,
@@ -30,7 +31,11 @@ export type ClipRoomState = {
   error?: string;
 };
 
-const RPC = process.env.SIETCH_RPC_URL ?? "https://sepolia.base.org";
+function chainTransport() {
+  return fallback(
+    clipRpcUrls(process.env.SIETCH_RPC_URL).map((url) => http(url, { timeout: 8_000 })),
+  );
+}
 
 function tape(error?: string): ClipRoomState {
   return {
@@ -75,7 +80,7 @@ export function isRearmable(): boolean {
 }
 
 function publicClient() {
-  return createPublicClient({ chain: baseSepolia, transport: http(RPC) });
+  return createPublicClient({ chain: baseSepolia, transport: chainTransport() });
 }
 
 async function readFactoryPointer(): Promise<{ desk: `0x${string}`; fromBlock: bigint } | null> {
@@ -228,7 +233,7 @@ export async function advanceClip(): Promise<ClipRoomState> {
   const wallet = createWalletClient({
     account,
     chain: baseSepolia,
-    transport: http(RPC),
+    transport: chainTransport(),
   });
 
   const hash = await withFaucet(client, account.address, () =>
@@ -298,7 +303,7 @@ export async function rearmClip(): Promise<ClipRoomState> {
   const wallet = createWalletClient({
     account,
     chain: baseSepolia,
-    transport: http(RPC),
+    transport: chainTransport(),
   });
 
   const value = await rearmValue(client, factory, account.address);
