@@ -219,7 +219,7 @@ flowchart TB
 | `crates/policy-program` | SP1 zkVM shell around the guest |
 | `crates/prove` | Execute / Groth16 / write artifacts, isolated stdin |
 | `contracts` | Foundry: `TBill.sol`, `Desk.sol`, `ClipFactory.sol` |
-| `contracts/metal` | AttestationRegistry (not on the Foundry `src` path) |
+| `contracts/metal` | AttestationRegistryV2 (not on the Foundry `src` path) |
 | `artifacts/demo` | Committed receipts, public values, deployment record |
 | `packages/ui` | shadcn/ui (`@repo/ui`). Never install components into an app |
 | `packages/db` | Sietch Drizzle + Neon (`@repo/db`) |

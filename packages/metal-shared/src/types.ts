@@ -7,7 +7,8 @@ export enum DemoAgentName {
 
 export type ReportRouteId = "basic" | "premium";
 
-// Mirrors AttestationRegistry.sol enums
+// The compliance decision as the facilitator records it off chain. AttestationRegistryV2 publishes
+// only a commitment, so these values never reach the event — they live in the decision record.
 export enum IdentityStatus {
   NotFound = 0,
   Verified = 1,

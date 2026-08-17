@@ -48,36 +48,6 @@ export const ERC8004_ABI = [
   },
 ] as const;
 
-export const ATTESTATION_REGISTRY_V1_ABI = [
-  {
-    name: "attest",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "paymentHash", type: "bytes32" },
-      { name: "payer", type: "address" },
-      { name: "amountUsdc", type: "uint256" },
-      { name: "identityStatus", type: "uint8" },
-      { name: "decision", type: "uint8" },
-    ],
-    outputs: [],
-  },
-  {
-    name: "Attested",
-    type: "event",
-    inputs: [
-      { name: "paymentHash", type: "bytes32", indexed: true },
-      { name: "payer", type: "address", indexed: true },
-      { name: "amountUsdc", type: "uint256", indexed: false },
-      { name: "identityStatus", type: "uint8", indexed: false },
-      { name: "decision", type: "uint8", indexed: false },
-      { name: "timestamp", type: "uint256", indexed: false },
-    ],
-  },
-] as const;
-
-export const ATTESTED_EVENT = ATTESTATION_REGISTRY_V1_ABI[1];
-
 export const ATTESTATION_REGISTRY_ABI = [
   {
     name: "attest",
