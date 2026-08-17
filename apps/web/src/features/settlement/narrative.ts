@@ -122,7 +122,7 @@ export function whatJustHappened(phase: Phase): string {
     case "pending":
       return "Chani instructed. Her institution issued an allow, Paul’s issued a refusal, and settle() moved nothing.";
     case "published":
-      return "Paul’s institution published inbound v2. The refusal stays on the transcript — publishing a version never rewrites it.";
+      return "Paul’s institution published inbound v2. The refusal stays on the transcript. Publishing a version never rewrites it.";
     case "settled":
       return "Chani instructed the same delivery. Both institutions issued an allow against a new transfer id, and the share posted for Paul.";
   }
@@ -149,18 +149,18 @@ const CAVEAT =
  */
 export function ledger(phase: Phase): Ledger {
   const never = [
-    "The other institution’s policy — one policy per stdin, never both",
-    "Which clause refused — the desk emits no such field",
-    "The clauses in bytes — only their seals were transmitted",
+    "The other institution’s policy: one policy per stdin, never both",
+    "Which clause refused: the desk emits no such field",
+    "The clauses in bytes: only their seals were transmitted",
   ] as const;
 
   if (phase === "idle") {
-    return { read: ["Nothing yet — Chani has not instructed"], never, caveat: CAVEAT };
+    return { read: ["Nothing yet. Chani has not instructed"], never, caveat: CAVEAT };
   }
 
   const read = [
     "Two booleans: outbound allowed, inbound allowed",
-    "Two policy seals — v1’s is enumerable",
+    "Two policy seals. v1’s is enumerable",
     phase === "settled" ? "Both receipts verified for this vkey" : "One transfer id per attempt",
   ];
 

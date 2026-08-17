@@ -57,7 +57,7 @@ export function KnownLimits() {
           <li key={limit.id} className="text-[12.5px]">
             <span className="text-foreground">{limit.title}</span>
             <span className="text-muted-foreground">
-              {" — "}
+              {": "}
               {limit.what} {limit.real}
             </span>
           </li>

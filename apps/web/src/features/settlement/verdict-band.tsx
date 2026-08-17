@@ -12,7 +12,7 @@ const TONE = {
 } as const;
 
 function mark(allowed: boolean | null): string {
-  return allowed === null ? "—" : allowed ? "✓" : "✗";
+  return allowed === null ? "-" : allowed ? "✓" : "✗";
 }
 
 function Side({ operand }: { operand: Operand }) {

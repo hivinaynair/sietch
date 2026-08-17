@@ -95,7 +95,7 @@ export function receipts(phase: Phase): readonly [Receipt, Receipt] {
   const pair = receiptsFor(phase);
   const sealNote = inboundV2
     ? null
-    : "same seal both sides — the v1 clauses are identical here, and an unsalted hash of identical clauses matches";
+    : "same seal both sides. The v1 clauses are identical here, and an unsalted hash of identical clauses matches";
 
   return [
     {

@@ -30,7 +30,7 @@ export function BeatSpine({ phase }: { phase: Phase }) {
             >
               {beat.label}
               <span className="sr-only">
-                {beat.status === "done" ? " — done" : beat.status === "current" ? " — next" : ""}
+                {beat.status === "done" ? " (done)" : beat.status === "current" ? " (next)" : ""}
               </span>
             </span>
           </span>
