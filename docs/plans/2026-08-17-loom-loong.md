@@ -1,6 +1,8 @@
 # Loom script — Loong, under 5 minutes
 
-Two tabs. Do not ad-lib the clip copy. Spoken lines are ~450 words — about 3:15. The three waits fill the rest. Do not add a sidebar tour.
+Hard stop at 5:00. Spoken lines are ~430 words — about 3:05. Three Sietch waits plus one Bare Metal run fill the rest. If a wait passes 20 seconds, stay silent. Do not fill. Do not add a sidebar tour. Do not run Bare Metal’s three abort cases.
+
+Loong was shown Bare Metal before and did not see it. This recording is the one that counts. Do not say “you missed this.” Forty seconds, one Happy-path Run, then stop.
 
 **Tabs**
 
@@ -9,9 +11,9 @@ Two tabs. Do not ad-lib the clip copy. Spoken lines are ~450 words — about 3:1
 
 **Before record**
 
-- If Sietch is settled, **Re-arm** off-camera. Books: 1 on the desk, 0 on Paul.
-- Bare Metal: Demo, do not click Run until Act 2.
-- Do not say: payment, cap, correspondent, “Allow this transfer.”
+- Live check 17 Aug: Sietch is **already idle**. Books: 1 on the desk, 0 on Paul. Button: **Chani instructs the delivery**. Do **not** Re-arm.
+- Bare Metal: Demo, **Happy path** selected. Do not click Run until Act 2.
+- Do not say: payment, cap, correspondent, “Allow this transfer,” bank, house.
 - Loong is **Paul’s institution**. Say institution, not bank.
 
 ---
@@ -28,7 +30,7 @@ You are Paul’s institution. Only institutions own the book. Chani and Paul nev
 
 ---
 
-## Act 1 — Sietch — 3 minutes
+## Act 1 — Sietch — 2 minutes 50 seconds
 
 ### Seat — 15 seconds
 
@@ -40,7 +42,7 @@ A toy T-bill share on the desk. Two receipts, same guest, isolated stdin — nev
 
 ### Click 1 — 50 seconds
 
-*[Click. Do not talk over the wait.]*
+*[Click “Chani instructs the delivery”. Do not talk over the wait.]*
 
 Chani instructed a delivery to Paul.
 
@@ -50,7 +52,7 @@ The public may see which institution failed. Not the inbound T-bill stub. No rea
 
 ### Click 2 — 40 seconds
 
-*[Click. Point at the transcript: the refusal is still there.]*
+*[Click “Paul’s institution publishes inbound v2”. Point at the transcript: the refusal is still there.]*
 
 You publish inbound T-bill policy v2. Not Paul. You.
 
@@ -58,7 +60,7 @@ A version is not a settlement. The refusal stays. We do not rewrite history.
 
 ### Click 3 — 40 seconds
 
-*[Click. Point at Paul’s books, 0 to 1.]*
+*[Click “Chani instructs the same delivery”. Point at Paul’s books, 0 to 1.]*
 
 Chani instructs the same delivery again. Both allow. Settled for Paul.
 
@@ -66,7 +68,7 @@ Refuse, publish, settle. That is the clip.
 
 ### Believe — 25 seconds
 
-*[Scroll Known limits. One glance, one sentence.]*
+*[Scroll Known limits. One glance, one sentence. Do not read the four rows.]*
 
 What you should believe: a delivery her institution allows can still stop at you. The chain does not get either book. Only you publish v2, then it settles for Paul. Two receipts, not a shared operator.
 
@@ -76,11 +78,13 @@ Honest stub: the v1 seal is enumerable, proving is precomputed, this page verifi
 
 ## Act 2 — Bare Metal — 50 seconds
 
-*[Tab 2. Say the sentence, then click Run on a passing scenario. Do not narrate every gate. Do not open Feed, Policy, or Agents.]*
+*[Tab 2. Happy path already selected. Say the sentence, then click Run. Do not narrate every gate. Do not open Feed, Policy, or Agents. Do not click Mandate exceeded, Policy exceeded, or Unregistered agent.]*
+
+I walked this rail before. Forty seconds so both pillars sit in one recording.
 
 Same desk. Other pillar. Compliance before settlement, not after. Identity, mandate, policy, then the transfer. First failure aborts. Funds never leave.
 
-I am not merging these into one homepage. Two threat models. One checkout so I can show you both.
+Happy path. One Run. I am not merging these into one homepage. Two threat models. One checkout so I can show you both.
 
 ---
 
