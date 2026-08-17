@@ -26,18 +26,6 @@ function stubFetch(state = idle) {
     })) as unknown as typeof fetch;
 }
 
-test("the title names the primitive before the clip story starts", () => {
-  stubFetch({ ...idle, rearmable: false });
-  render(<SettlementRoom initial={{ ...idle, rearmable: false }} />);
-  expect(screen.getByRole("heading", { name: "Sietch", level: 1 })).toBeTruthy();
-  expect(
-    screen.getByText(
-      /Two institutions each prove, privately, that their own transfer policy allows a delivery/,
-    ),
-  ).toBeTruthy();
-  expect(screen.getByText(/desk moves a T-bill share only if both receipts allow/)).toBeTruthy();
-});
-
 test("Re-arm sits next to Refresh when the factory is live", async () => {
   stubFetch();
   render(<SettlementRoom initial={idle} />);

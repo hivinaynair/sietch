@@ -171,13 +171,12 @@ export function SettlementRoom({ initial }: { initial?: RoomState }) {
   return (
     <div className="flex min-h-svh flex-col bg-background">
       <header className="border-border border-b">
-        <div className="mx-auto flex w-full max-w-[1180px] flex-wrap items-start justify-between gap-x-4 gap-y-2 px-8 py-4">
-          <div className="max-w-xl">
+        <div className="mx-auto flex w-full max-w-[1180px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-8 py-4">
+          <div className="flex flex-wrap items-baseline gap-x-3">
             <h1 className="font-semibold text-[16px] tracking-[-0.02em]">Sietch</h1>
-            <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground">
-              Two institutions each prove, privately, that their own transfer policy allows a
-              delivery. The desk moves a T-bill share only if both receipts allow.
-            </p>
+            <span className="text-[12px] text-muted-foreground">
+              Inter-institutional settlement · demo
+            </span>
           </div>
           <div className="flex items-center gap-5">
             <span className="flex items-center gap-2">

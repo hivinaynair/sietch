@@ -1,5 +1,7 @@
 # Sietch
 
+A job-application demo of one Metal primitive: **programmable private policy at settlement**. Two institutions each prove, privately, that their own transfer policy allows a delivery. A desk on Base Sepolia moves a tokenized T-bill share only if both receipts allow. The walk below is that delivery.
+
 **Paul** is a customer of a US institution. **Chani** is a customer of an institution in India.
 
 Chani instructed her institution to deliver a tokenized T-bill share to Paul. Her institution allowed it. The share did not land on Paul’s books.
