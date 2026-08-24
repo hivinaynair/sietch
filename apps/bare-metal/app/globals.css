@@ -12,9 +12,8 @@
 
 html,
 body {
-  max-width: 100vw;
-  /* clip, not hidden: hidden makes body a scroll container and kills position:sticky */
-  overflow-x: clip;
+  height: 100%;
+  overflow: hidden;
   color-scheme: light;
 }
 

@@ -23,8 +23,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="flex min-h-svh bg-background text-foreground">
-      <aside className="sticky top-0 hidden h-svh w-[244px] shrink-0 flex-col overflow-hidden border-r border-border bg-card lg:flex">
+    <div className="flex h-svh overflow-hidden bg-background text-foreground">
+      <aside className="hidden h-full w-[244px] shrink-0 flex-col overflow-hidden border-r border-border bg-card lg:flex">
         <div className="px-5 py-5">
           <Link href="/" className="flex items-center gap-2.5">
             <Image
@@ -83,7 +83,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
         <header className="flex items-center gap-3 border-b border-border bg-background px-4 py-3 lg:hidden">
           <Link href="/" className="font-heading text-xl tracking-tight">
             Bare Metal
