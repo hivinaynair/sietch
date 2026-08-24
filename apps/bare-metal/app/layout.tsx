@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://metal-web.vercel.app"),
   title: "Bare Metal",
   description: "Unofficial Metal-inspired settlement infrastructure demo",
+  other: {
+    "sietch-app": "bare-metal",
+  },
   openGraph: {
     title: "Bare Metal",
     description: "Unofficial Metal-inspired settlement infrastructure demo",
